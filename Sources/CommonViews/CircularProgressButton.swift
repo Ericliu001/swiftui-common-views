@@ -141,6 +141,7 @@ public struct CircularProgressButton<Content: View>: View {
                     height: size - strokeWidth
                 )
                 .animation(.linear(duration: 0.16), value: progressValue)
+                .animation(.easeInOut(duration: 0.4), value: isCompleted)
         }
     }
 
