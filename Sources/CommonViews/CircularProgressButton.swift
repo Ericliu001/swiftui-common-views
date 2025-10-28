@@ -65,7 +65,7 @@ public struct CircularProgressButton<Content: View>: View {
         strokeWidth: CGFloat = 4,
         progressColor: Color = .accentColor,
         completeColor: Color  = .green,
-        backgroundColor: Color = .white,
+        backgroundColor: Color = Color(uiColor: .systemBackground),
         enableHaptics: Bool = true,
         onCompletion: @escaping () -> Void,
         onPressStart: (() -> Void)? = nil,
