@@ -29,6 +29,7 @@ import SwiftUI
 public struct CircularTimerButton: View {
     @State private var progressValue: Double = 0.0
     @Binding private var elapsedTime: TimeInterval
+    @Binding private var isCompleted: Bool
     @State private var isRunning: Bool = false
     @State private var task: Task<Void, Never>?
     @State private var isPressed: Bool = false
@@ -46,6 +47,7 @@ public struct CircularTimerButton: View {
     ///
     /// - Parameters:
     ///   - currentElapsed: A binding to track the current elapsed time in seconds
+    ///   - isCompleted: A binding to track completion state
     ///   - duration: The total duration of the timer
     ///   - strokeWidth: The width of the progress ring
     ///   - progressColor: The color of the progress ring while running
@@ -55,6 +57,7 @@ public struct CircularTimerButton: View {
     ///   - onPause: Optional callback when timer is paused
     public init(
         currentElapsed: Binding<TimeInterval> = .constant(0),
+        isCompleted: Binding<Bool> = .constant(false),
         duration: Duration = .seconds(60),
         strokeWidth: CGFloat = 4,
         progressColor: Color = .accentColor,
@@ -64,6 +67,7 @@ public struct CircularTimerButton: View {
         onPause: (() -> Void)? = nil
     ) {
         self._elapsedTime = currentElapsed
+        self._isCompleted = isCompleted
         self.duration = duration
         self.strokeWidth = strokeWidth
         self.progressColor = progressColor
@@ -95,9 +99,9 @@ public struct CircularTimerButton: View {
 
             // Progress ring
             Circle()
-                .trim(from: 0, to: progressValue >= 1 ? 1 : progressValue)
+                .trim(from: 0, to: isCompleted ? 1 : progressValue)
                 .stroke(
-                    progressValue >= 1 ? completeColor : progressColor,
+                    isCompleted ? completeColor : progressColor,
                     style: StrokeStyle(
                         lineWidth: strokeWidth,
                         lineCap: .round
@@ -110,14 +114,17 @@ public struct CircularTimerButton: View {
                 )
                 .animation(.linear(duration: 0.16), value: progressValue)
         }
+        .onAppear{
+            self.progressValue = min(elapsedTime / duration.asSeconds, 1.0)
+        }
     }
 
     private func buttonContent(size: CGFloat) -> some View {
         Group {
-            if progressValue >= 1 {
+            if isCompleted {
                 // Completed state
                 Image(systemName: "checkmark")
-                    .font(.system(size: size * 0.6, weight: .bold))
+                    .font(.system(size: size * 0.5, weight: .bold))
                     .foregroundColor(completeColor)
             } else if isRunning {
                 // Running state - show timer
@@ -127,7 +134,7 @@ public struct CircularTimerButton: View {
             } else {
                 // Initial state - show play button
                 Image(systemName: "play.fill")
-                    .font(.system(size: size * 0.6, weight: .bold))
+                    .font(.system(size: size * 0.5, weight: .bold))
                     .foregroundColor(progressColor)
             }
         }
@@ -152,6 +159,11 @@ public struct CircularTimerButton: View {
 
     private func startTimer() {
         guard !isRunning else { return }
+        guard duration.asSeconds > 0 else {
+            handleCompletion()
+            return
+        }
+    
 
         isRunning = true
         onStart?()
@@ -204,16 +216,15 @@ public struct CircularTimerButton: View {
 
     private func handleCompletion() {
         isRunning = false
+        progressValue = 1
         task?.cancel()
+        isCompleted = true
         onCompletion()
     }
 
     private func handleTap() {
-        if progressValue >= 1 {
-            // Reset if completed
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                resetTimer()
-            }
+        if isCompleted {
+            // Ignore
         } else if isRunning {
             // Pause if running
             pauseTimer()
@@ -304,11 +315,11 @@ struct CircularTimerButtonPreviewHost: View {
                 }
 
                 VStack(spacing: 10) {
-                    Text("1 Minute Timer")
+                    Text("0 Second Timer")
                         .font(.headline)
                     CircularTimerButton(
                         currentElapsed: $elapsed2,
-                        duration: .seconds(60),
+                        duration: .seconds(0),
                         strokeWidth: 6,
                         progressColor: .blue,
                         onCompletion: {
