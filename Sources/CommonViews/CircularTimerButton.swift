@@ -6,9 +6,6 @@
 //
 
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
 
 /// A customizable button with a circular progress indicator and timer display.
 ///
@@ -40,7 +37,6 @@ public struct CircularTimerButton: View {
     private let strokeWidth: CGFloat
     private let progressColor: Color
     private let completeColor: Color
-    private let enableHaptics: Bool
     private let onCompletion: () -> Void
     private let onStart: (() -> Void)?
     private let onPause: (() -> Void)?
@@ -54,7 +50,6 @@ public struct CircularTimerButton: View {
     ///   - strokeWidth: The width of the progress ring
     ///   - progressColor: The color of the progress ring while running
     ///   - completeColor: The color when the timer completes
-    ///   - enableHaptics: Whether to enable haptic feedback (default: true)
     ///   - onCompletion: Callback triggered when timer completes
     ///   - onStart: Optional callback when timer starts
     ///   - onPause: Optional callback when timer is paused
@@ -64,40 +59,19 @@ public struct CircularTimerButton: View {
         strokeWidth: CGFloat = 4,
         progressColor: Color = .accentColor,
         completeColor: Color = .green,
-        enableHaptics: Bool = true,
         onCompletion: @escaping () -> Void = {},
         onStart: (() -> Void)? = nil,
-        onPause: (() -> Void)? = nil,
+        onPause: (() -> Void)? = nil
     ) {
         self._elapsedTime = currentElapsed
         self.duration = duration
         self.strokeWidth = strokeWidth
         self.progressColor = progressColor
         self.completeColor = completeColor
-        self.enableHaptics = enableHaptics
         self.onCompletion = onCompletion
         self.onStart = onStart
         self.onPause = onPause
     }
-
-    // MARK: - Haptic Feedback
-
-#if canImport(UIKit)
-    private func triggerHaptic(_ style: UIImpactFeedbackGenerator.FeedbackStyle) {
-        guard enableHaptics else { return }
-        let generator = UIImpactFeedbackGenerator(style: style)
-        generator.impactOccurred()
-    }
-
-    private func triggerNotificationHaptic(_ type: UINotificationFeedbackGenerator.FeedbackType) {
-        guard enableHaptics else { return }
-        let generator = UINotificationFeedbackGenerator()
-        generator.notificationOccurred(type)
-    }
-#else
-    private func triggerHaptic(_ style: Any) {}
-    private func triggerNotificationHaptic(_ type: Any) {}
-#endif
 
     // MARK: - Time Formatting
 
@@ -179,10 +153,6 @@ public struct CircularTimerButton: View {
     private func startTimer() {
         guard !isRunning else { return }
 
-#if canImport(UIKit)
-        triggerHaptic(.light)
-#endif
-
         isRunning = true
         onStart?()
 
@@ -220,10 +190,6 @@ public struct CircularTimerButton: View {
     private func pauseTimer() {
         guard isRunning else { return }
 
-#if canImport(UIKit)
-        triggerHaptic(.rigid)
-#endif
-
         isRunning = false
         task?.cancel()
         onPause?()
@@ -237,10 +203,6 @@ public struct CircularTimerButton: View {
     }
 
     private func handleCompletion() {
-#if canImport(UIKit)
-        triggerNotificationHaptic(.success)
-#endif
-
         isRunning = false
         task?.cancel()
         onCompletion()
