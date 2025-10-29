@@ -18,17 +18,20 @@ import UIKit
 ///
 /// Example usage:
 /// ```swift
+/// @State private var elapsed: TimeInterval = 0
+///
 /// CircularTimerButton(
+///     currentElapsed: $elapsed,
 ///     duration: .seconds(60),
 ///     onCompletion: {
-///         print("Timer completed!")
+///         print("Timer completed after \(elapsed) seconds!")
 ///     }
 /// )
 /// .frame(width: 100, height: 100)
 /// ```
 public struct CircularTimerButton: View {
     @State private var progressValue: Double = 0.0
-    @State private var elapsedTime: TimeInterval = 0
+    @Binding private var elapsedTime: TimeInterval
     @State private var isRunning: Bool = false
     @State private var task: Task<Void, Never>?
     @State private var isPressed: Bool = false
@@ -37,7 +40,6 @@ public struct CircularTimerButton: View {
     private let strokeWidth: CGFloat
     private let progressColor: Color
     private let completeColor: Color
-    private let backgroundColor: Color
     private let enableHaptics: Bool
     private let onCompletion: () -> Void
     private let onStart: (() -> Void)?
@@ -47,31 +49,31 @@ public struct CircularTimerButton: View {
     /// Creates a circular timer button.
     ///
     /// - Parameters:
+    ///   - currentElapsed: A binding to track the current elapsed time in seconds
     ///   - duration: The total duration of the timer
     ///   - strokeWidth: The width of the progress ring
     ///   - progressColor: The color of the progress ring while running
     ///   - completeColor: The color when the timer completes
-    ///   - backgroundColor: The background color of the button
     ///   - enableHaptics: Whether to enable haptic feedback (default: true)
     ///   - onCompletion: Callback triggered when timer completes
     ///   - onStart: Optional callback when timer starts
     ///   - onPause: Optional callback when timer is paused
     public init(
+        currentElapsed: Binding<TimeInterval> = .constant(0),
         duration: Duration = .seconds(60),
         strokeWidth: CGFloat = 4,
         progressColor: Color = .accentColor,
         completeColor: Color = .green,
-        backgroundColor: Color = Color(uiColor: .systemBackground),
         enableHaptics: Bool = true,
         onCompletion: @escaping () -> Void = {},
         onStart: (() -> Void)? = nil,
         onPause: (() -> Void)? = nil,
     ) {
+        self._elapsedTime = currentElapsed
         self.duration = duration
         self.strokeWidth = strokeWidth
         self.progressColor = progressColor
         self.completeColor = completeColor
-        self.backgroundColor = backgroundColor
         self.enableHaptics = enableHaptics
         self.onCompletion = onCompletion
         self.onStart = onStart
@@ -102,8 +104,6 @@ public struct CircularTimerButton: View {
     private func formatTime(_ seconds: TimeInterval) -> String {
         let mins = Int(seconds) / 60
         let secs = Int(seconds) % 60
-//        let fraction = Int((seconds.truncatingRemainder(dividingBy: 1)) * 10)
-//        return String(format: "%d:%02d.%d", mins, secs, fraction)
         return String(format: "%02d:%02d", mins, secs)
     }
 
@@ -111,11 +111,6 @@ public struct CircularTimerButton: View {
 
     private func progressRing(size: CGFloat) -> some View {
         ZStack {
-            // Base circle
-            Circle()
-                .fill(backgroundColor)
-                .background(.regularMaterial, in: Circle())
-
             // Progress ring background
             Circle()
                 .stroke(progressColor.opacity(0.2), lineWidth: strokeWidth)
@@ -153,7 +148,7 @@ public struct CircularTimerButton: View {
             } else if isRunning {
                 // Running state - show timer
                 Text(formatTime(elapsedTime))
-                    .font(.system(size: size * 0.2, weight: .semibold, design: .monospaced))
+                    .font(.system(size: size * 0.25, weight: .semibold, design: .monospaced))
                     .foregroundColor(progressColor)
             } else {
                 // Initial state - show play button
@@ -172,7 +167,6 @@ public struct CircularTimerButton: View {
             progressRing(size: size)
             buttonContent(size: size)
         }
-        .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
         .scaleEffect(isPressed ? 0.95 : 1)
         .animation(
             .spring(response: 0.2, dampingFraction: 0.7),
@@ -315,6 +309,9 @@ private extension Duration {
 #if DEBUG
 struct CircularTimerButtonPreviewHost: View {
     @State private var message = ""
+    @State private var elapsed1: TimeInterval = 0
+    @State private var elapsed2: TimeInterval = 0
+    @State private var elapsed3: TimeInterval = 0
 
     var body: some View {
         ScrollView {
@@ -326,6 +323,7 @@ struct CircularTimerButtonPreviewHost: View {
                     Text("30 Second Timer")
                         .font(.headline)
                     CircularTimerButton(
+                        currentElapsed: $elapsed1,
                         duration: .seconds(30),
                         onCompletion: {
                             message = "30 second timer completed!"
@@ -338,12 +336,16 @@ struct CircularTimerButtonPreviewHost: View {
                         }
                     )
                     .frame(width: 150, height: 150)
+                    Text("Elapsed: \(String(format: "%.1f", elapsed1))s")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
 
                 VStack(spacing: 10) {
                     Text("1 Minute Timer")
                         .font(.headline)
                     CircularTimerButton(
+                        currentElapsed: $elapsed2,
                         duration: .seconds(60),
                         strokeWidth: 6,
                         progressColor: .blue,
@@ -352,22 +354,28 @@ struct CircularTimerButtonPreviewHost: View {
                         }
                     )
                     .frame(width: 120, height: 120)
+                    Text("Elapsed: \(String(format: "%.1f", elapsed2))s")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
 
                 VStack(spacing: 10) {
                     Text("Custom Style (10s)")
                         .font(.headline)
                     CircularTimerButton(
+                        currentElapsed: $elapsed3,
                         duration: .seconds(10),
                         strokeWidth: 8,
                         progressColor: .purple,
                         completeColor: .orange,
-                        backgroundColor: .white,
                         onCompletion: {
                             message = "10 second timer completed!"
                         }
                     )
                     .frame(width: 100, height: 100)
+                    Text("Elapsed: \(String(format: "%.1f", elapsed3))s")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
 
                 if !message.isEmpty {

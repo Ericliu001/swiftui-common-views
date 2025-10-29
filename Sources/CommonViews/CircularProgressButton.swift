@@ -48,7 +48,7 @@ public struct CircularProgressButton<Content: View>: View {
     /// Creates a circular progress button.
     ///
     /// - Parameters:
-    ///   - isCompleted: A binding that sets the state 
+    ///   - isCompleted: A binding that sets the completion state
     ///   - duration: The duration required to complete the long press
     ///   - strokeWidth: The width of the progress ring
     ///   - progressColor: The color of the progress ring while pressing
