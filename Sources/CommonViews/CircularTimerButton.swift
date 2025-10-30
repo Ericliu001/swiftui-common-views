@@ -253,10 +253,6 @@ public struct CircularTimerButton: View {
                         }
                 )
         }
-        .onDisappear {
-            task?.cancel()
-            task = nil
-        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
             progressValue >= 1 ? "Completed" :
