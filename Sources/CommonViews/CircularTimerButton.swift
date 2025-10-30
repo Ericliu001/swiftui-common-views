@@ -30,6 +30,7 @@ public struct CircularTimerButton: View {
     @State private var progressValue: Double = 0.0
     @Binding private var elapsedTime: TimeInterval
     @Binding private var isCompleted: Bool
+    @Binding private var resetToggle: Bool
     @State private var isRunning: Bool = false
     @State private var task: Task<Void, Never>?
     @State private var isPressed: Bool = false
@@ -57,6 +58,7 @@ public struct CircularTimerButton: View {
     ///   - onPause: Optional callback when timer is paused
     public init(
         currentElapsed: Binding<TimeInterval> = .constant(0),
+        resetToggle: Binding<Bool> = .constant(false),
         isCompleted: Binding<Bool> = .constant(false),
         duration: Duration = .seconds(60),
         strokeWidth: CGFloat = 4,
@@ -68,6 +70,7 @@ public struct CircularTimerButton: View {
     ) {
         self._elapsedTime = currentElapsed
         self._isCompleted = isCompleted
+        self._resetToggle = resetToggle
         self.duration = duration
         self.strokeWidth = strokeWidth
         self.progressColor = progressColor
@@ -116,6 +119,9 @@ public struct CircularTimerButton: View {
         }
         .onAppear{
             self.progressValue = min(elapsedTime / duration.asSeconds, 1.0)
+        }
+        .onChange(of: resetToggle) {
+            resetTimer()
         }
     }
 
@@ -176,6 +182,8 @@ public struct CircularTimerButton: View {
             while !Task.isCancelled {
                 try? await Task.sleep(for: updateInterval)
 
+                guard !Task.isCancelled else { break }
+
                 // Calculate elapsed time since timer started
                 let elapsed = ContinuousClock.now - startTime
                 let elapsedSeconds = Double(elapsed.components.seconds) +
@@ -209,9 +217,14 @@ public struct CircularTimerButton: View {
 
     private func resetTimer() {
         task?.cancel()
+        task = nil
         isRunning = false
-        elapsedTime = 0
-        progressValue = 0
+        isCompleted = false
+        isPressed = false
+        withAnimation(.none) {
+            elapsedTime = 0
+            progressValue = 0
+        }
     }
 
     private func handleCompletion() {
