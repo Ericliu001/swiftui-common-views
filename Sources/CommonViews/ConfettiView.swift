@@ -135,11 +135,7 @@ struct ConfettiView: View {
                 }
             }
             .onChange(of: toggle) { _, newValue in
-                if newValue {
-                    startConfetti(in: geometry.size)
-                } else {
-                    stopConfetti()
-                }
+                startConfetti(in: geometry.size)
             }
             .onDisappear {
                 stopConfetti()
@@ -204,7 +200,7 @@ struct ConfettiView: View {
     private func playLaunchSound() {
         guard enableSound else { return }
 #if canImport(AudioToolbox)
-        AudioServicesPlaySystemSound(1106)
+        AudioServicesPlaySystemSound(1030) // 1030 | Sherwood_Forest.caf   
 #endif
     }
 
@@ -309,7 +305,6 @@ public extension View {
         )
     }
 }
-
 
 #if DEBUG
 import SwiftUI

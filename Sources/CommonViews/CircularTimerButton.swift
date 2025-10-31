@@ -64,9 +64,9 @@ public struct CircularTimerButton: View {
         strokeWidth: CGFloat = 4,
         progressColor: Color = .accentColor,
         completeColor: Color = .green,
-        onCompletion: @escaping () -> Void = {},
         onStart: (() -> Void)? = nil,
-        onPause: (() -> Void)? = nil
+        onPause: (() -> Void)? = nil,
+        onCompletion: @escaping () -> Void = {},
     ) {
         self._elapsedTime = currentElapsed
         self._isCompleted = isCompleted
@@ -323,15 +323,15 @@ struct CircularTimerButtonPreviewHost: View {
                         currentElapsed: $elapsed1,
                         resetToggle: $reset1,
                         duration: .seconds(30),
-                        onCompletion: {
-                            message = "30 second timer completed!"
-                        },
                         onStart: {
                             message = "Timer started..."
                         },
                         onPause: {
                             message = "Timer paused"
-                        }
+                        },
+                        onCompletion: {
+                            message = "30 second timer completed!"
+                        },
                     )
                     .frame(width: 150, height: 150)
                     Text("Elapsed: \(String(format: "%.1f", elapsed1))s")
