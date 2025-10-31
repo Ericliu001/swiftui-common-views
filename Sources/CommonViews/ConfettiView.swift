@@ -12,6 +12,7 @@ struct ConfettiPiece: Identifiable {
     var x: CGFloat
     var y: CGFloat
     var rotation: Double
+    var rotation3D: Double
     var scale: CGFloat
     var opacity: Double
     var color: Color
@@ -19,6 +20,10 @@ struct ConfettiPiece: Identifiable {
     var velocityX: CGFloat
     var velocityY: CGFloat
     var angularVelocity: Double
+    var angularVelocity3D: Double
+    var axisX: CGFloat
+    var axisY: CGFloat
+    var axisZ: CGFloat
 }
 
 enum ConfettiShape {
@@ -34,7 +39,7 @@ enum ConfettiShape {
         case .ellipse:
             Ellipse()
                 .fill(color)
-                .frame(width: size * 0.5, height: size)
+                .frame(width: size, height: size)
         case .square:
             Rectangle()
                 .fill(color)
@@ -124,6 +129,10 @@ struct ConfettiView: View {
             ZStack {
                 ForEach(pieces) { piece in
                     piece.shape.view(color: piece.color, size: 10 * piece.scale)
+                        .rotation3DEffect(
+                            .degrees(piece.rotation3D),
+                            axis: (x: piece.axisX, y: piece.axisY, z: piece.axisZ)
+                        )
                         .rotationEffect(Angle.degrees(piece.rotation))
                         .opacity(piece.opacity)
                         .position(x: piece.x, y: piece.y)
@@ -201,11 +210,13 @@ struct ConfettiView: View {
             in: -(size.width * 0.1)...(size.width * 1.1)
         )
         let startY = CGFloat.random(in: -(size.height * 0.25)...0)
+        let axis = randomAxis()
 
         return ConfettiPiece(
             x: startX,
             y: startY,
             rotation: Double.random(in: 0...360),
+            rotation3D: Double.random(in: 0...360),
             scale: CGFloat.random(in: 0.5...1.5),
             opacity: 1.0,
             color: colors.randomElement() ?? .blue,
@@ -213,7 +224,11 @@ struct ConfettiView: View {
                 .randomElement() ?? .triangle,
             velocityX: CGFloat.random(in: -1...1),
             velocityY: CGFloat.random(in: 0.25...3),
-            angularVelocity: Double.random(in: -10...10)
+            angularVelocity: Double.random(in: -10...10),
+            angularVelocity3D: Double.random(in: -20...20),
+            axisX: axis.x,
+            axisY: axis.y,
+            axisZ: axis.z
         )
     }
 
@@ -227,6 +242,7 @@ struct ConfettiView: View {
 
             // Update rotation
             newPiece.rotation += piece.angularVelocity
+            newPiece.rotation3D += piece.angularVelocity3D
 
             // Apply gravity
             newPiece.velocityY += 0.1
@@ -238,6 +254,28 @@ struct ConfettiView: View {
 
             return newPiece
         }
+    }
+
+    private func randomAxis() -> (x: CGFloat, y: CGFloat, z: CGFloat) {
+        var axis: (x: CGFloat, y: CGFloat, z: CGFloat)
+        repeat {
+            axis = (
+                x: CGFloat.random(in: -1...1),
+                y: CGFloat.random(in: -1...1),
+                z: CGFloat.random(in: -1...1)
+            )
+        } while axis.x == 0 && axis.y == 0 && axis.z == 0
+
+        let magnitude = max(
+            (axis.x * axis.x + axis.y * axis.y + axis.z * axis.z).squareRoot(),
+            0.001
+        )
+
+        return (
+            x: axis.x / magnitude,
+            y: axis.y / magnitude,
+            z: axis.z / magnitude
+        )
     }
 }
 
