@@ -1,4 +1,10 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
+#if canImport(AudioToolbox)
+import AudioToolbox
+#endif
 
 // MARK: - Confetti Piece Model
 struct ConfettiPiece: Identifiable {
@@ -94,13 +100,23 @@ struct ConfettiView: View {
 
     let intensity: Int
     let colors: [Color]
+    let enableHaptics: Bool
+    let enableSound: Bool
 
-    init(toggle: Binding<Bool>, intensity: Int = 50, colors: [Color] = [
-        .red, .orange, .yellow, .green, .blue, .purple, .pink
-    ]) {
+    init(
+        toggle: Binding<Bool>,
+        intensity: Int = 50,
+        colors: [Color] = [
+            .red, .orange, .yellow, .green, .blue, .purple, .pink
+        ],
+        enableHaptics: Bool = true,
+        enableSound: Bool = true
+    ) {
         self._toggle = toggle
         self.intensity = intensity
         self.colors = colors
+        self.enableHaptics = enableHaptics
+        self.enableSound = enableSound
     }
 
     var body: some View {
@@ -134,6 +150,7 @@ struct ConfettiView: View {
 
     private func startConfetti(in size: CGSize) {
         stopConfetti()
+        triggerLaunchFeedback()
         // Generate initial confetti pieces
         pieces = (0..<intensity).map { _ in
             createConfettiPiece(in: size)
@@ -167,6 +184,28 @@ struct ConfettiView: View {
         if resetToggle, toggle {
             toggle = false
         }
+    }
+
+    private func triggerLaunchFeedback() {
+        triggerHaptic()
+        playLaunchSound()
+    }
+
+#if canImport(UIKit)
+    private func triggerHaptic() {
+        guard enableHaptics else { return }
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+    }
+#else
+    private func triggerHaptic() {}
+#endif
+
+    private func playLaunchSound() {
+        guard enableSound else { return }
+#if canImport(AudioToolbox)
+        AudioServicesPlaySystemSound(1106)
+#endif
     }
 
     private func createConfettiPiece(in size: CGSize) -> ConfettiPiece {
@@ -219,6 +258,8 @@ struct ConfettiModifier: ViewModifier {
     let toggle: Binding<Bool>
     let intensity: Int
     let colors: [Color]
+    let enableHaptics: Bool
+    let enableSound: Bool
 
     func body(content: Content) -> some View {
         content
@@ -226,7 +267,9 @@ struct ConfettiModifier: ViewModifier {
                 ConfettiView(
                     toggle: toggle,
                     intensity: intensity,
-                    colors: colors
+                    colors: colors,
+                    enableHaptics: enableHaptics,
+                    enableSound: enableSound
                 )
             )
     }
@@ -238,6 +281,8 @@ public extension View {
     ///   - toggle: Binding that triggers the confetti when set to `true`
     ///   - intensity: Number of confetti pieces (default: 100)
     ///   - colors: Array of colors to use (default: rainbow colors)
+    ///   - enableHaptics: Whether to play a success haptic when confetti starts
+    ///   - enableSound: Whether to play a celebration sound when confetti starts
     func confetti(
         toggle: Binding<Bool>,
         intensity: Int = 100,
@@ -249,13 +294,17 @@ public extension View {
             .blue,
             .purple,
             .pink
-        ]
+        ],
+        enableHaptics: Bool = true,
+        enableSound: Bool = true
     ) -> some View {
         modifier(
             ConfettiModifier(
                 toggle: toggle,
                 intensity: intensity,
-                colors: colors
+                colors: colors,
+                enableHaptics: enableHaptics,
+                enableSound: enableSound
             )
         )
     }
