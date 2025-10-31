@@ -173,7 +173,7 @@ struct ConfettiView: View {
         let startX = CGFloat.random(
             in: -(size.width * 0.1)...(size.width * 1.1)
         )
-        let startY = CGFloat.random(in: -(size.height * 0.1)...0)
+        let startY = CGFloat.random(in: -(size.height * 0.25)...0)
 
         return ConfettiPiece(
             x: startX,
@@ -185,7 +185,7 @@ struct ConfettiView: View {
             shape: [.ellipse, .square, .triangle, .rectangle, .star]
                 .randomElement() ?? .triangle,
             velocityX: CGFloat.random(in: -1...1),
-            velocityY: CGFloat.random(in: 1...5),
+            velocityY: CGFloat.random(in: 0.25...3),
             angularVelocity: Double.random(in: -10...10)
         )
     }
@@ -202,7 +202,7 @@ struct ConfettiView: View {
             newPiece.rotation += piece.angularVelocity
 
             // Apply gravity
-            newPiece.velocityY += 0.2
+            newPiece.velocityY += 0.1
 
             // Fade out as it falls
             if newPiece.y > size.height * 0.7 {
