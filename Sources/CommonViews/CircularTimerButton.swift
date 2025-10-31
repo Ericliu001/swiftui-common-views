@@ -42,7 +42,7 @@ public struct CircularTimerButton: View {
     private let onCompletion: () -> Void
     private let onStart: (() -> Void)?
     private let onPause: (() -> Void)?
-    private let updateInterval: Duration = .seconds(0.16)
+    private let updateInterval: Duration = .seconds(0.25)
 
     /// Creates a circular timer button.
     ///
@@ -172,16 +172,14 @@ public struct CircularTimerButton: View {
     
 
         isRunning = true
+        let startTime = ContinuousClock.now
         onStart?()
 
         task = Task {
-            let startTime = ContinuousClock.now
             let totalDuration = duration.asSeconds
             let resumeFromTime = elapsedTime
 
             while !Task.isCancelled {
-                try? await Task.sleep(for: updateInterval)
-
                 guard !Task.isCancelled else { break }
 
                 // Calculate elapsed time since timer started
@@ -191,10 +189,11 @@ public struct CircularTimerButton: View {
 
                 let currentElapsed = resumeFromTime + elapsedSeconds
 
-                await MainActor.run {
+                DispatchQueue.main.async {
                     self.elapsedTime = min(currentElapsed, totalDuration)
                     self.progressValue = min(currentElapsed / totalDuration, 1.0)
                 }
+                
 
                 // Check if completed
                 if currentElapsed >= totalDuration {
@@ -203,6 +202,8 @@ public struct CircularTimerButton: View {
                     }
                     break
                 }
+                
+                try? await Task.sleep(for: updateInterval)
             }
         }
     }

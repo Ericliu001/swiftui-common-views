@@ -43,7 +43,7 @@ public struct CircularProgressButton<Content: View>: View {
     private let backgroundColor: Color
     private let content: (_ isCompleted: Bool) -> Content
     private let enableHaptics: Bool
-    private let updateInterval: Duration = .seconds(0.08) // ~120 FPS updates
+    private let updateInterval: Duration = .milliseconds(16) // ~60 FPS updates
 
     /// Creates a circular progress button.
     ///
@@ -194,13 +194,12 @@ public struct CircularProgressButton<Content: View>: View {
             triggerHaptic(.light)
 #endif
             onPressStart?()
+            let startTime = ContinuousClock.now
 
             task = Task {
-                let startTime = ContinuousClock.now
                 let totalDuration = duration.asSeconds
 
                 while !Task.isCancelled {
-                    try? await Task.sleep(for: updateInterval)
 
                     // Calculate elapsed time since press started
                     let elapsed = ContinuousClock.now - startTime
@@ -210,7 +209,7 @@ public struct CircularProgressButton<Content: View>: View {
                     // Calculate progress directly from elapsed time (no accumulation errors)
                     let calculatedProgress = min(elapsedSeconds / totalDuration, 1.0)
 
-                    await MainActor.run {
+                    DispatchQueue.main.async {
                         self.progressValue = calculatedProgress
                     }
 
@@ -218,6 +217,8 @@ public struct CircularProgressButton<Content: View>: View {
                     if calculatedProgress >= 1.0 {
                         break
                     }
+                    
+                    try? await Task.sleep(for: updateInterval)
                 }
 
                 await MainActor.run {
@@ -381,6 +382,13 @@ struct CircularProgressButtonPreviewHost: View {
                     }
                 }
                 .frame(width: 100, height: 100)
+                
+                Button("Reset") {
+                    isCompletedBasic = false
+                    isCompletedIcons = false
+                    isCompletedCustomStyle = false
+                }
+                .buttonStyle(.borderedProminent)
             }
             .padding(50)
         }
