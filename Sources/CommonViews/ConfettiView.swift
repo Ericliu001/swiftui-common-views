@@ -129,12 +129,7 @@ struct ConfettiView: View {
                         .position(x: piece.x, y: piece.y)
                 }
             }
-            .onAppear {
-                if toggle {
-                    startConfetti(in: geometry.size)
-                }
-            }
-            .onChange(of: toggle) { _, newValue in
+            .onChange(of: toggle) { _, _ in
                 startConfetti(in: geometry.size)
             }
             .onDisappear {
@@ -169,17 +164,14 @@ struct ConfettiView: View {
         }
 
         if allOffScreen {
-            stopConfetti(resetToggle: true)
+            stopConfetti()
         }
     }
 
-    private func stopConfetti(resetToggle: Bool = false) {
+    private func stopConfetti() {
         animationTimer?.invalidate()
         animationTimer = nil
         pieces.removeAll()
-        if resetToggle, toggle {
-            toggle = false
-        }
     }
 
     private func triggerLaunchFeedback() {
