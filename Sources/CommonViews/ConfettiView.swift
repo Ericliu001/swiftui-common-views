@@ -59,13 +59,15 @@ struct Triangle: Shape {
 struct ConfettiView: View {
     @State private var pieces: [ConfettiPiece] = []
     @State private var animationTimer: Timer?
+    @Binding private var toggle: Bool
 
     let intensity: Int
     let colors: [Color]
 
-    init(intensity: Int = 50, colors: [Color] = [
+    init(toggle: Binding<Bool>, intensity: Int = 50, colors: [Color] = [
         .red, .orange, .yellow, .green, .blue, .purple, .pink
     ]) {
+        self._toggle = toggle
         self.intensity = intensity
         self.colors = colors
     }
@@ -80,7 +82,7 @@ struct ConfettiView: View {
                         .position(x: piece.x, y: piece.y)
                 }
             }
-            .onAppear {
+            .onChange(of: toggle) { _, _ in
                 startConfetti(in: geometry.size)
             }
             .onDisappear {
@@ -91,6 +93,7 @@ struct ConfettiView: View {
     }
 
     private func startConfetti(in size: CGSize) {
+        animationTimer?.invalidate()
         // Generate initial confetti pieces
         pieces = (0..<intensity).map { _ in
             createConfettiPiece(in: size)
@@ -100,19 +103,20 @@ struct ConfettiView: View {
         animationTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { _ in
             Task { @MainActor in
                 updateConfetti(in: size)
+                checkIfAllPiecesOffScreen(in: size)
             }
         }
+    }
 
-        // Stop animation after a few seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+    private func checkIfAllPiecesOffScreen(in size: CGSize) {
+        // Check if all pieces are off screen (below the bottom or faded out)
+        let allOffScreen = pieces.allSatisfy { piece in
+            piece.y > size.height || piece.opacity <= 0
+        }
+
+        if allOffScreen {
             animationTimer?.invalidate()
-            withAnimation(.easeOut(duration: 1.0)) {
-                pieces = pieces.map { piece in
-                    var newPiece = piece
-                    newPiece.opacity = 0
-                    return newPiece
-                }
-            }
+            pieces.removeAll()
         }
     }
 
@@ -129,7 +133,7 @@ struct ConfettiView: View {
             color: colors.randomElement() ?? .blue,
             shape: [ConfettiShape.circle, .square, .triangle, .rectangle].randomElement() ?? .triangle,
             velocityX: CGFloat.random(in: -2...2),
-            velocityY: CGFloat.random(in: 2...5),
+            velocityY: CGFloat.random(in: 1...5),
             angularVelocity: Double.random(in: -10...10)
         )
     }
@@ -160,18 +164,14 @@ struct ConfettiView: View {
 
 // MARK: - Confetti Modifier
 struct ConfettiModifier: ViewModifier {
-    let isActive: Bool
+    let toggle: Binding<Bool>
     let intensity: Int
     let colors: [Color]
 
     func body(content: Content) -> some View {
         content
             .overlay(
-                Group {
-                    if isActive {
-                        ConfettiView(intensity: intensity, colors: colors)
-                    }
-                }
+                ConfettiView(toggle: toggle, intensity: intensity, colors: colors)
             )
     }
 }
@@ -183,23 +183,14 @@ extension View {
     ///   - intensity: Number of confetti pieces (default: 50)
     ///   - colors: Array of colors to use (default: rainbow colors)
     func confetti(
-        isActive: Bool,
+        toggle: Binding<Bool>,
         intensity: Int = 100,
         colors: [Color] = [.red, .orange, .yellow, .green, .blue, .purple, .pink]
     ) -> some View {
-        modifier(ConfettiModifier(isActive: isActive, intensity: intensity, colors: colors))
+        modifier(ConfettiModifier(toggle: toggle, intensity: intensity, colors: colors))
     }
 }
 
-// MARK: - Preview
-#Preview {
-    VStack {
-        Text("Confetti Effect")
-            .font(.largeTitle)
-    }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .confetti(isActive: true)
-}
 
 #if DEBUG
 import SwiftUI
@@ -216,22 +207,16 @@ struct ConfettiExamples: View {
 
             // Example 1: Basic button trigger
             Button("Celebrate!") {
-                triggerConfetti()
+                showConfetti.toggle()
             }
             .buttonStyle(.borderedProminent)
 
             Spacer()
         }
         .padding()
-        .confetti(isActive: showConfetti)
+        .confetti(toggle: $showConfetti)
     }
 
-    private func triggerConfetti() {
-        showConfetti = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) {
-            showConfetti = false
-        }
-    }
 }
 
 // MARK: - Custom Colors Example
@@ -244,23 +229,17 @@ struct CustomColorConfettiExample: View {
                 .font(.title)
 
             Button("Show Green & Gold Confetti") {
-                triggerConfetti()
+                showConfetti.toggle()
             }
             .buttonStyle(.borderedProminent)
         }
         .confetti(
-            isActive: showConfetti,
+            toggle: $showConfetti,
             intensity: 75,
             colors: [.green, .yellow, .mint, .teal]
         )
     }
 
-    private func triggerConfetti() {
-        showConfetti = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) {
-            showConfetti = false
-        }
-    }
 }
 
 // MARK: - Task Completion Example
@@ -276,7 +255,7 @@ struct TaskCompletionExample: View {
             Button {
                 isCompleted.toggle()
                 if isCompleted {
-                    triggerConfetti()
+                    showConfetti.toggle()
                 }
             } label: {
                 HStack {
@@ -287,15 +266,9 @@ struct TaskCompletionExample: View {
             }
             .buttonStyle(.bordered)
         }
-        .confetti(isActive: showConfetti)
+        .confetti(toggle: $showConfetti)
     }
 
-    private func triggerConfetti() {
-        showConfetti = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) {
-            showConfetti = false
-        }
-    }
 }
 
 // MARK: - Preview
