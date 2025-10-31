@@ -43,7 +43,7 @@ public struct CircularProgressButton<Content: View>: View {
     private let backgroundColor: Color
     private let content: (_ isCompleted: Bool) -> Content
     private let enableHaptics: Bool
-    private let updateInterval: Duration = .milliseconds(8) // ~60 FPS updates
+    private let updateInterval: Duration = .seconds(0.08) // ~120 FPS updates
 
     /// Creates a circular progress button.
     ///
