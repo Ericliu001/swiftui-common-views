@@ -1,0 +1,315 @@
+import SwiftUI
+
+// MARK: - Confetti Piece Model
+struct ConfettiPiece: Identifiable {
+    let id = UUID()
+    var x: CGFloat
+    var y: CGFloat
+    var rotation: Double
+    var scale: CGFloat
+    var opacity: Double
+    var color: Color
+    var shape: ConfettiShape
+    var velocityX: CGFloat
+    var velocityY: CGFloat
+    var angularVelocity: Double
+}
+
+enum ConfettiShape {
+    case circle
+    case square
+    case triangle
+    case rectangle
+
+    @ViewBuilder
+    func view(color: Color, size: CGFloat) -> some View {
+        switch self {
+        case .circle:
+            Ellipse()
+                .fill(color)
+                .frame(width: size * 0.5, height: size)
+        case .square:
+            Rectangle()
+                .fill(color)
+                .frame(width: size, height: size)
+        case .triangle:
+            Triangle()
+                .fill(color)
+                .frame(width: size, height: size)
+        case .rectangle:
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: size, height: size * 0.6)
+        }
+    }
+}
+
+struct Triangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.closeSubpath()
+        return path
+    }
+}
+
+// MARK: - Confetti View
+struct ConfettiView: View {
+    @State private var pieces: [ConfettiPiece] = []
+    @State private var animationTimer: Timer?
+
+    let intensity: Int
+    let colors: [Color]
+
+    init(intensity: Int = 50, colors: [Color] = [
+        .red, .orange, .yellow, .green, .blue, .purple, .pink
+    ]) {
+        self.intensity = intensity
+        self.colors = colors
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                ForEach(pieces) { piece in
+                    piece.shape.view(color: piece.color, size: 10 * piece.scale)
+                        .rotationEffect(Angle.degrees(piece.rotation))
+                        .opacity(piece.opacity)
+                        .position(x: piece.x, y: piece.y)
+                }
+            }
+            .onAppear {
+                startConfetti(in: geometry.size)
+            }
+            .onDisappear {
+                animationTimer?.invalidate()
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func startConfetti(in size: CGSize) {
+        // Generate initial confetti pieces
+        pieces = (0..<intensity).map { _ in
+            createConfettiPiece(in: size)
+        }
+
+        // Animate confetti
+        animationTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { _ in
+            Task { @MainActor in
+                updateConfetti(in: size)
+            }
+        }
+
+        // Stop animation after a few seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+            animationTimer?.invalidate()
+            withAnimation(.easeOut(duration: 1.0)) {
+                pieces = pieces.map { piece in
+                    var newPiece = piece
+                    newPiece.opacity = 0
+                    return newPiece
+                }
+            }
+        }
+    }
+
+    private func createConfettiPiece(in size: CGSize) -> ConfettiPiece {
+        let startX = CGFloat.random(in: 0...size.width)
+        let startY = CGFloat.random(in: -50...0)
+
+        return ConfettiPiece(
+            x: startX,
+            y: startY,
+            rotation: Double.random(in: 0...360),
+            scale: CGFloat.random(in: 0.5...1.5),
+            opacity: 1.0,
+            color: colors.randomElement() ?? .blue,
+            shape: [ConfettiShape.circle, .square, .triangle, .rectangle].randomElement() ?? .triangle,
+            velocityX: CGFloat.random(in: -2...2),
+            velocityY: CGFloat.random(in: 2...5),
+            angularVelocity: Double.random(in: -10...10)
+        )
+    }
+
+    private func updateConfetti(in size: CGSize) {
+        pieces = pieces.map { piece in
+            var newPiece = piece
+
+            // Update position
+            newPiece.x += piece.velocityX
+            newPiece.y += piece.velocityY
+
+            // Update rotation
+            newPiece.rotation += piece.angularVelocity
+
+            // Apply gravity
+            newPiece.velocityY += 0.2
+
+            // Fade out as it falls
+            if newPiece.y > size.height * 0.7 {
+                newPiece.opacity -= 0.02
+            }
+
+            return newPiece
+        }
+    }
+}
+
+// MARK: - Confetti Modifier
+struct ConfettiModifier: ViewModifier {
+    let isActive: Bool
+    let intensity: Int
+    let colors: [Color]
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(
+                Group {
+                    if isActive {
+                        ConfettiView(intensity: intensity, colors: colors)
+                    }
+                }
+            )
+    }
+}
+
+extension View {
+    /// Displays confetti effect over the view
+    /// - Parameters:
+    ///   - isActive: Whether to show the confetti
+    ///   - intensity: Number of confetti pieces (default: 50)
+    ///   - colors: Array of colors to use (default: rainbow colors)
+    func confetti(
+        isActive: Bool,
+        intensity: Int = 100,
+        colors: [Color] = [.red, .orange, .yellow, .green, .blue, .purple, .pink]
+    ) -> some View {
+        modifier(ConfettiModifier(isActive: isActive, intensity: intensity, colors: colors))
+    }
+}
+
+// MARK: - Preview
+#Preview {
+    VStack {
+        Text("Confetti Effect")
+            .font(.largeTitle)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .confetti(isActive: true)
+}
+
+#if DEBUG
+import SwiftUI
+
+/// Example usage of the Confetti effect in different scenarios
+struct ConfettiExamples: View {
+    @State private var showConfetti = false
+
+    var body: some View {
+        VStack(spacing: 30) {
+            Text("Confetti Examples")
+                .font(.largeTitle)
+                .bold()
+
+            // Example 1: Basic button trigger
+            Button("Celebrate!") {
+                triggerConfetti()
+            }
+            .buttonStyle(.borderedProminent)
+
+            Spacer()
+        }
+        .padding()
+        .confetti(isActive: showConfetti)
+    }
+
+    private func triggerConfetti() {
+        showConfetti = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) {
+            showConfetti = false
+        }
+    }
+}
+
+// MARK: - Custom Colors Example
+struct CustomColorConfettiExample: View {
+    @State private var showConfetti = false
+
+    var body: some View {
+        VStack {
+            Text("Custom Colors")
+                .font(.title)
+
+            Button("Show Green & Gold Confetti") {
+                triggerConfetti()
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .confetti(
+            isActive: showConfetti,
+            intensity: 75,
+            colors: [.green, .yellow, .mint, .teal]
+        )
+    }
+
+    private func triggerConfetti() {
+        showConfetti = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) {
+            showConfetti = false
+        }
+    }
+}
+
+// MARK: - Task Completion Example
+struct TaskCompletionExample: View {
+    @State private var isCompleted = false
+    @State private var showConfetti = false
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("Complete Task")
+                .font(.title2)
+
+            Button {
+                isCompleted.toggle()
+                if isCompleted {
+                    triggerConfetti()
+                }
+            } label: {
+                HStack {
+                    Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                    Text(isCompleted ? "Task Completed!" : "Complete Task")
+                }
+                .foregroundColor(isCompleted ? .green : .primary)
+            }
+            .buttonStyle(.bordered)
+        }
+        .confetti(isActive: showConfetti)
+    }
+
+    private func triggerConfetti() {
+        showConfetti = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) {
+            showConfetti = false
+        }
+    }
+}
+
+// MARK: - Preview
+#Preview("Basic") {
+    ConfettiExamples()
+}
+
+#Preview("Custom Colors") {
+    CustomColorConfettiExample()
+}
+
+#Preview("Task Completion") {
+    TaskCompletionExample()
+}
+
+
+#endif
