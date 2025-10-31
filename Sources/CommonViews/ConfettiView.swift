@@ -16,15 +16,16 @@ struct ConfettiPiece: Identifiable {
 }
 
 enum ConfettiShape {
-    case circle
+    case ellipse
     case square
     case triangle
     case rectangle
+    case star
 
     @ViewBuilder
     func view(color: Color, size: CGFloat) -> some View {
         switch self {
-        case .circle:
+        case .ellipse:
             Ellipse()
                 .fill(color)
                 .frame(width: size * 0.5, height: size)
@@ -40,6 +41,10 @@ enum ConfettiShape {
             RoundedRectangle(cornerRadius: 2)
                 .fill(color)
                 .frame(width: size, height: size * 0.6)
+        case .star:
+            Star()
+                .fill(color)
+                .frame(width: size, height: size)
         }
     }
 }
@@ -50,6 +55,32 @@ struct Triangle: Shape {
         path.move(to: CGPoint(x: rect.midX, y: rect.minY))
         path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
         path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.closeSubpath()
+        return path
+    }
+}
+
+struct Star: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let outerRadius = min(rect.width, rect.height) / 2
+        let innerRadius = outerRadius * 0.4
+        let numberOfPoints = 5
+
+        for i in 0..<numberOfPoints * 2 {
+            let angle = CGFloat(i) * .pi / CGFloat(numberOfPoints) - .pi / 2
+            let radius = i.isMultiple(of: 2) ? outerRadius : innerRadius
+            let x = center.x + radius * cos(angle)
+            let y = center.y + radius * sin(angle)
+
+            if i == 0 {
+                path.move(to: CGPoint(x: x, y: y))
+            } else {
+                path.addLine(to: CGPoint(x: x, y: y))
+            }
+        }
+
         path.closeSubpath()
         return path
     }
@@ -82,30 +113,40 @@ struct ConfettiView: View {
                         .position(x: piece.x, y: piece.y)
                 }
             }
-            .onChange(of: toggle) { _, _ in
-                startConfetti(in: geometry.size)
+            .onAppear {
+                if toggle {
+                    startConfetti(in: geometry.size)
+                }
+            }
+            .onChange(of: toggle) { _, newValue in
+                if newValue {
+                    startConfetti(in: geometry.size)
+                } else {
+                    stopConfetti()
+                }
             }
             .onDisappear {
-                animationTimer?.invalidate()
+                stopConfetti()
             }
         }
         .allowsHitTesting(false)
     }
 
     private func startConfetti(in size: CGSize) {
-        animationTimer?.invalidate()
+        stopConfetti()
         // Generate initial confetti pieces
         pieces = (0..<intensity).map { _ in
             createConfettiPiece(in: size)
         }
 
         // Animate confetti
-        animationTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { _ in
-            Task { @MainActor in
-                updateConfetti(in: size)
-                checkIfAllPiecesOffScreen(in: size)
+        animationTimer = Timer
+            .scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { _ in
+                Task { @MainActor in
+                    updateConfetti(in: size)
+                    checkIfAllPiecesOffScreen(in: size)
+                }
             }
-        }
     }
 
     private func checkIfAllPiecesOffScreen(in size: CGSize) {
@@ -115,14 +156,24 @@ struct ConfettiView: View {
         }
 
         if allOffScreen {
-            animationTimer?.invalidate()
-            pieces.removeAll()
+            stopConfetti(resetToggle: true)
+        }
+    }
+
+    private func stopConfetti(resetToggle: Bool = false) {
+        animationTimer?.invalidate()
+        animationTimer = nil
+        pieces.removeAll()
+        if resetToggle, toggle {
+            toggle = false
         }
     }
 
     private func createConfettiPiece(in size: CGSize) -> ConfettiPiece {
-        let startX = CGFloat.random(in: 0...size.width)
-        let startY = CGFloat.random(in: -50...0)
+        let startX = CGFloat.random(
+            in: -(size.width * 0.1)...(size.width * 1.1)
+        )
+        let startY = CGFloat.random(in: -(size.height * 0.1)...0)
 
         return ConfettiPiece(
             x: startX,
@@ -131,8 +182,9 @@ struct ConfettiView: View {
             scale: CGFloat.random(in: 0.5...1.5),
             opacity: 1.0,
             color: colors.randomElement() ?? .blue,
-            shape: [ConfettiShape.circle, .square, .triangle, .rectangle].randomElement() ?? .triangle,
-            velocityX: CGFloat.random(in: -2...2),
+            shape: [.ellipse, .square, .triangle, .rectangle, .star]
+                .randomElement() ?? .triangle,
+            velocityX: CGFloat.random(in: -1...1),
             velocityY: CGFloat.random(in: 1...5),
             angularVelocity: Double.random(in: -10...10)
         )
@@ -171,23 +223,41 @@ struct ConfettiModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .overlay(
-                ConfettiView(toggle: toggle, intensity: intensity, colors: colors)
+                ConfettiView(
+                    toggle: toggle,
+                    intensity: intensity,
+                    colors: colors
+                )
             )
     }
 }
 
-extension View {
+public extension View {
     /// Displays confetti effect over the view
     /// - Parameters:
-    ///   - isActive: Whether to show the confetti
-    ///   - intensity: Number of confetti pieces (default: 50)
+    ///   - toggle: Binding that triggers the confetti when set to `true`
+    ///   - intensity: Number of confetti pieces (default: 100)
     ///   - colors: Array of colors to use (default: rainbow colors)
     func confetti(
         toggle: Binding<Bool>,
         intensity: Int = 100,
-        colors: [Color] = [.red, .orange, .yellow, .green, .blue, .purple, .pink]
+        colors: [Color] = [
+            .red,
+            .orange,
+            .yellow,
+            .green,
+            .blue,
+            .purple,
+            .pink
+        ]
     ) -> some View {
-        modifier(ConfettiModifier(toggle: toggle, intensity: intensity, colors: colors))
+        modifier(
+            ConfettiModifier(
+                toggle: toggle,
+                intensity: intensity,
+                colors: colors
+            )
+        )
     }
 }
 
@@ -214,7 +284,7 @@ struct ConfettiExamples: View {
             Spacer()
         }
         .padding()
-        .confetti(toggle: $showConfetti)
+        .confetti(toggle: $showConfetti, intensity: 250)
     }
 
 }
@@ -225,6 +295,7 @@ struct CustomColorConfettiExample: View {
 
     var body: some View {
         VStack {
+            Spacer()
             Text("Custom Colors")
                 .font(.title)
 
@@ -235,7 +306,7 @@ struct CustomColorConfettiExample: View {
         }
         .confetti(
             toggle: $showConfetti,
-            intensity: 75,
+            intensity: 175,
             colors: [.green, .yellow, .mint, .teal]
         )
     }
@@ -248,7 +319,8 @@ struct TaskCompletionExample: View {
     @State private var showConfetti = false
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack {
+            Spacer()
             Text("Complete Task")
                 .font(.title2)
 
@@ -259,7 +331,9 @@ struct TaskCompletionExample: View {
                 }
             } label: {
                 HStack {
-                    Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                    Image(
+                        systemName: isCompleted ? "checkmark.circle.fill" : "circle"
+                    )
                     Text(isCompleted ? "Task Completed!" : "Complete Task")
                 }
                 .foregroundColor(isCompleted ? .green : .primary)
