@@ -42,7 +42,7 @@ public struct CircularTimerButton: View {
     private let onCompletion: () -> Void
     private let onStart: (() -> Void)?
     private let onPause: (() -> Void)?
-    private let updateInterval: Duration = .milliseconds(16) // ~60 FPS
+    private let updateInterval: Duration = .seconds(0.16)
 
     /// Creates a circular timer button.
     ///
@@ -291,21 +291,36 @@ private extension Duration {
 #if DEBUG
 struct CircularTimerButtonPreviewHost: View {
     @State private var message = ""
+    @State private var reset1: Bool = false
+    @State private var reset2: Bool = false
+    @State private var reset3: Bool = false
+    @State private var isCompleted2 = false
     @State private var elapsed1: TimeInterval = 0
-    @State private var elapsed2: TimeInterval = 0
     @State private var elapsed3: TimeInterval = 0
 
     var body: some View {
         ScrollView {
             VStack(spacing: 40) {
+                HStack {
+                    
                 Text("Timer Buttons")
                     .font(.title)
+                    
+                    Button("Reset") {
+                        reset1.toggle()
+                        reset2.toggle()
+                        reset3.toggle()
+                        elapsed1 = 0
+                        elapsed3 = 0
+                    }.buttonStyle(.borderedProminent)
+                }
 
                 VStack(spacing: 10) {
                     Text("30 Second Timer")
                         .font(.headline)
                     CircularTimerButton(
                         currentElapsed: $elapsed1,
+                        resetToggle: $reset1,
                         duration: .seconds(30),
                         onCompletion: {
                             message = "30 second timer completed!"
@@ -327,7 +342,8 @@ struct CircularTimerButtonPreviewHost: View {
                     Text("0 Second Timer")
                         .font(.headline)
                     CircularTimerButton(
-                        currentElapsed: $elapsed2,
+                        resetToggle: $reset2,
+                        isCompleted: $isCompleted2,
                         duration: .seconds(0),
                         strokeWidth: 6,
                         progressColor: .blue,
@@ -336,9 +352,6 @@ struct CircularTimerButtonPreviewHost: View {
                         }
                     )
                     .frame(width: 120, height: 120)
-                    Text("Elapsed: \(String(format: "%.1f", elapsed2))s")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                 }
 
                 VStack(spacing: 10) {
@@ -346,6 +359,7 @@ struct CircularTimerButtonPreviewHost: View {
                         .font(.headline)
                     CircularTimerButton(
                         currentElapsed: $elapsed3,
+                        resetToggle: $reset3,
                         duration: .seconds(10),
                         strokeWidth: 8,
                         progressColor: .purple,
