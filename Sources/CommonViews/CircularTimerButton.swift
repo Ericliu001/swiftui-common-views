@@ -140,8 +140,6 @@ public struct CircularTimerButton: View {
             resetTimer()
         }
         .onChange(of: status, initial: true) {_, newStatus in
-            self.progressValue = min(elapsedTime / duration.asSeconds, 1.0)
-            
             switch newStatus {
             case .notStarted:
                 resetTimer()
@@ -198,15 +196,14 @@ public struct CircularTimerButton: View {
 
     private func startTimer() {
         guard duration.asSeconds > 0 else {
-            completeTimer()
+            status = .isCompleted
             return
         }
     
-
-        status = .inProgress
         let startTime = ContinuousClock.now
         onStart?(startTime)
 
+        task?.cancel()
         task = Task {
             let totalDuration = duration.asSeconds
             let resumeFromTime = elapsedTime
@@ -231,7 +228,7 @@ public struct CircularTimerButton: View {
                 // Check if completed
                 if currentElapsed >= totalDuration {
                     await MainActor.run {
-                        completeTimer()
+                        status = .isCompleted
                     }
                     break
                 }
@@ -242,16 +239,14 @@ public struct CircularTimerButton: View {
     }
 
     private func pauseTimer() {
-        guard isRunning else { return }
-        status = .isPaused
         task?.cancel()
+        task = nil
         onPause?()
     }
 
     private func resetTimer() {
         task?.cancel()
         task = nil
-        status = .notStarted
         isPressed = false
         withAnimation(.none) {
             elapsedTime = 0
@@ -260,9 +255,9 @@ public struct CircularTimerButton: View {
     }
 
     private func completeTimer() {
-        status = .isCompleted
         progressValue = 1
         task?.cancel()
+        task = nil
         onCompletion?()
     }
 
@@ -271,10 +266,10 @@ public struct CircularTimerButton: View {
             // Ignore
         } else if isRunning {
             // Pause if running
-            pauseTimer()
+            status = .isPaused
         } else {
             // Start if not running
-            startTimer()
+            status = .inProgress
         }
     }
 
