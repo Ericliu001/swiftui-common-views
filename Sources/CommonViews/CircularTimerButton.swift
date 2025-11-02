@@ -10,7 +10,7 @@ import SwiftUI
 
 public enum CircularTimerButtonStatus {
     case notStarted
-    case inProgress
+    case isStarted
     case isPaused
     case isResumed
     case isCompleted
@@ -105,7 +105,7 @@ public struct CircularTimerButton: View {
     }
     
     private var isRunning: Bool {
-        status == .inProgress
+        status == .isStarted || status == .isResumed
     }
 
     // MARK: - Time Formatting
@@ -152,7 +152,7 @@ public struct CircularTimerButton: View {
             switch newStatus {
             case .notStarted:
                 resetTimer()
-            case .inProgress:
+            case .isStarted:
                 startTimer()
             case .isPaused:
                 pauseTimer()
@@ -173,12 +173,12 @@ public struct CircularTimerButton: View {
 
     private func buttonContent(size: CGFloat) -> some View {
         Group {
-            if status == .isCompleted {
+            if isCompleted {
                 // Completed state
                 Image(systemName: "checkmark")
                     .font(.system(size: size * 0.5, weight: .bold))
                     .foregroundColor(completeColor)
-            } else if status == .inProgress || status == .isResumed {
+            } else if isRunning {
                 // Running state - show timer
                 Text(formatTime(elapsedTime))
                     .font(
@@ -278,8 +278,8 @@ public struct CircularTimerButton: View {
     private func handleTap() {
         switch status {
         case .notStarted:
-            status = .inProgress
-        case .inProgress:
+            status = .isStarted
+        case .isStarted:
             status = .isPaused
         case .isPaused:
             status = .isResumed

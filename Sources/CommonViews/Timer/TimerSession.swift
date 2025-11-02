@@ -19,6 +19,7 @@ public enum TimerStatus {
     case notStarted
     case inProgress
     case isPaused
+    case isResumed
     case isCompleted
 }
 
@@ -65,7 +66,7 @@ public class TimerSession {
 
     /// Pauses the timer, preserving elapsed time
     public func pause() {
-        guard status == .inProgress else { return }
+        guard status == .inProgress || status == .isResumed else { return }
         pausedAt = ContinuousClock.now
         status = .isPaused
     }
@@ -79,7 +80,7 @@ public class TimerSession {
         pausedDuration += delta
 
         self.pausedAt = nil
-        status = .inProgress
+        status = .isResumed
     }
 
     /// Resets the timer to its initial state
