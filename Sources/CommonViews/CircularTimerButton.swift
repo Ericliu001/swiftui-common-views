@@ -39,7 +39,6 @@ public struct CircularTimerButton: View {
     @Binding private var elapsedTime: TimeInterval
     @Binding private var resetToggle: Bool
     @State private var task: Task<Void, Never>?
-    @State private var isPressed: Bool = false
     @Binding private var status: CircularTimerButtonStatus
 
     private let duration: Duration
@@ -179,8 +178,6 @@ public struct CircularTimerButton: View {
             }
         }
         .frame(width: size * 0.9, height: size * 0.9)
-        .scaleEffect(isPressed ? 0.9 : 1.0)
-        .animation(.easeInOut(duration: 0.1), value: isPressed)
     }
 
     private func buttonView(size: CGFloat) -> some View {
@@ -188,11 +185,6 @@ public struct CircularTimerButton: View {
             progressRing(size: size)
             buttonContent(size: size)
         }
-        .scaleEffect(isPressed ? 0.95 : 1)
-        .animation(
-            .spring(response: 0.2, dampingFraction: 0.7),
-            value: isPressed
-        )
     }
 
     // MARK: - Timer Control
@@ -252,7 +244,6 @@ public struct CircularTimerButton: View {
     private func resetTimer() {
         task?.cancel()
         task = nil
-        isPressed = false
         withAnimation(.none) {
             elapsedTime = 0
             progressValue = 0
@@ -287,15 +278,6 @@ public struct CircularTimerButton: View {
                 .onTapGesture {
                     handleTap()
                 }
-                .simultaneousGesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { _ in
-                            isPressed = true
-                        }
-                        .onEnded { _ in
-                            isPressed = false
-                        }
-                )
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
