@@ -50,7 +50,7 @@ public struct CircularTimerButton: View {
     private let onStart: (() -> Void)?
     private let onPause: (() -> Void)?
     private let onResume: (() -> Void)?
-    private let onCompletion: (() -> Void)?
+    private let onCompletionState: (() -> Void)?
     private let onTimeLapse: ((TimeInterval) -> Void)?
     private let onTimerCompletion: (() -> Void)?
     private let updateInterval: Duration
@@ -80,7 +80,7 @@ public struct CircularTimerButton: View {
         onStart: (() -> Void)? = nil,
         onPause: (() -> Void)? = nil,
         onResume: (() -> Void)? = nil,
-        onCompletion: (() -> Void)? = nil,
+        onCompletionState: (() -> Void)? = nil,
         onTimerCompletion: (() -> Void)? = nil,
         onTimeLapse: ((TimeInterval) -> Void)? = nil,
     ) {
@@ -92,7 +92,7 @@ public struct CircularTimerButton: View {
         self.strokeWidth = strokeWidth
         self.progressColor = progressColor
         self.completeColor = completeColor
-        self.onCompletion = onCompletion
+        self.onCompletionState = onCompletionState
         self.onTimeLapse = onTimeLapse
         self.onTimerCompletion = onTimerCompletion
         self.onStart = onStart
@@ -237,6 +237,7 @@ public struct CircularTimerButton: View {
                         1.0
                     )
                     self.onTimeLapse?(elapsedSeconds)
+                    print("Timelapse \(elapsedSeconds)")
                 }
                 
                 
@@ -272,7 +273,7 @@ public struct CircularTimerButton: View {
         progressValue = 1
         task?.cancel()
         task = nil
-        onCompletion?()
+        onCompletionState?()
     }
 
     private func handleTap() {
@@ -373,7 +374,7 @@ struct CircularTimerButtonPreviewHost: View {
                         onResume: {
                             timerSession1.resume()
                         },
-                        onCompletion: {
+                        onCompletionState: {
                             message = "30 second timer completed!"
                             timerSession1.complete()
                         }
@@ -405,7 +406,7 @@ struct CircularTimerButtonPreviewHost: View {
                         onResume: {
                             timerSession2.resume()
                         },
-                        onCompletion: {
+                        onCompletionState: {
                             message = "0 second timer completed!"
                             timerSession2.complete()
                         }
@@ -436,7 +437,7 @@ struct CircularTimerButtonPreviewHost: View {
                         onResume: {
                             timerSession3.resume()
                         },
-                        onCompletion: {
+                        onCompletionState: {
                             message = "10 second timer completed!"
                             timerSession3.complete()
                         }
