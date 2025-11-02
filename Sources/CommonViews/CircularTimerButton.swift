@@ -201,32 +201,29 @@ public struct CircularTimerButton: View {
         }
     
         let startTime = ContinuousClock.now
+        let baseElapsed = elapsedTime
         onStart?()
 
         task?.cancel()
         task = Task {
             let totalDuration = duration.asSeconds
-            let resumeFromTime = elapsedTime
 
             while !Task.isCancelled {
                 guard !Task.isCancelled else { break }
 
                 // Calculate elapsed time since timer started
-                let elapsed = ContinuousClock.now - startTime
-                let elapsedSeconds = Double(elapsed.components.seconds) +
-                    Double(elapsed.components.attoseconds) / 1_000_000_000_000_000_000
-
-                let currentElapsed = resumeFromTime + elapsedSeconds
+                let sinceStart: Duration = ContinuousClock.now - startTime
+                let elapsedSeconds = baseElapsed + sinceStart.asSeconds
 
                 DispatchQueue.main.async {
-                    self.elapsedTime = min(currentElapsed, totalDuration)
-                    self.progressValue = min(currentElapsed / totalDuration, 1.0)
-                    self.onTimeLapse?(currentElapsed)
+                    self.elapsedTime = min(elapsedSeconds, totalDuration)
+                    self.progressValue = min(elapsedSeconds / totalDuration, 1.0)
+                    self.onTimeLapse?(elapsedSeconds)
                 }
                 
 
                 // Check if completed
-                if currentElapsed >= totalDuration {
+                if elapsedSeconds >= totalDuration {
                     await MainActor.run {
                         status = .isCompleted
                         onTimerCompletion?()
