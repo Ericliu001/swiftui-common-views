@@ -101,7 +101,7 @@ struct Star: Shape {
 struct ConfettiView: View {
     @State private var pieces: [ConfettiPiece] = []
     @State private var animationTimer: Timer?
-    @Binding private var toggle: Bool
+    private let toggle: Bool
 
     let intensity: Int
     let colors: [Color]
@@ -109,7 +109,7 @@ struct ConfettiView: View {
     let enableSound: Bool
 
     init(
-        toggle: Binding<Bool>,
+        toggle: Bool,
         intensity: Int = 50,
         colors: [Color] = [
             .red, .orange, .yellow, .green, .blue, .purple, .pink
@@ -117,7 +117,7 @@ struct ConfettiView: View {
         enableHaptics: Bool = true,
         enableSound: Bool = true
     ) {
-        self._toggle = toggle
+        self.toggle = toggle
         self.intensity = intensity
         self.colors = colors
         self.enableHaptics = enableHaptics
@@ -281,7 +281,7 @@ struct ConfettiView: View {
 
 // MARK: - Confetti Modifier
 struct ConfettiModifier: ViewModifier {
-    let toggle: Binding<Bool>
+    let toggle: Bool
     let intensity: Int
     let colors: [Color]
     let enableHaptics: Bool
@@ -304,13 +304,13 @@ struct ConfettiModifier: ViewModifier {
 public extension View {
     /// Displays confetti effect over the view
     /// - Parameters:
-    ///   - toggle: Binding that triggers the confetti when set to `true`
+    ///   - toggle: Boolean that triggers the confetti when set to `true`
     ///   - intensity: Number of confetti pieces (default: 100)
     ///   - colors: Array of colors to use (default: rainbow colors)
     ///   - enableHaptics: Whether to play a success haptic when confetti starts
     ///   - enableSound: Whether to play a celebration sound when confetti starts
     func confetti(
-        toggle: Binding<Bool>,
+        toggle: Bool,
         intensity: Int = 100,
         colors: [Color] = [
             .red,
@@ -358,7 +358,7 @@ struct ConfettiExamples: View {
             Spacer()
         }
         .padding()
-        .confetti(toggle: $showConfetti, intensity: 250)
+        .confetti(toggle: showConfetti, intensity: 250)
     }
 
 }
@@ -379,7 +379,7 @@ struct CustomColorConfettiExample: View {
             .buttonStyle(.borderedProminent)
         }
         .confetti(
-            toggle: $showConfetti,
+            toggle: showConfetti,
             intensity: 175,
             colors: [.green, .yellow, .mint, .teal]
         )
@@ -414,7 +414,7 @@ struct TaskCompletionExample: View {
             }
             .buttonStyle(.bordered)
         }
-        .confetti(toggle: $showConfetti)
+        .confetti(toggle: showConfetti)
     }
 
 }
