@@ -71,28 +71,30 @@ public struct ToastView: View {
     }
 }
 
-/// Presents a toast using a toggle binding. Flip the toggle value to display the toast.
+/// Presents a toast using a boolean trigger. Flip the trigger value to display the toast.
 public struct ToastModifier: ViewModifier {
-    @Binding private var toggle: Bool
+    private let toggle: Bool
     private let configuration: ToastConfiguration
     private let onDismiss: (() -> Void)?
 
     @State private var isPresented: Bool = false
-    @State private var dismissWorkItem: DispatchWorkItem?
+    @State private var dismissTask: Task<Void, Never>?
 
     public init(
-        toggle: Binding<Bool>,
+        toggle: Bool,
         configuration: ToastConfiguration,
         onDismiss: (() -> Void)? = nil
     ) {
-        self._toggle = toggle
+        self.toggle = toggle
         self.configuration = configuration
         self.onDismiss = onDismiss
     }
 
     public func body(content: Content) -> some View {
         content
-            .onChange(of: toggle, perform: handleToggleChange)
+            .onChange(of: toggle) { _, newValue in
+                presentToast()
+            }
             .overlay(alignment: toastAlignment) {
                 Group {
                     if isPresented {
@@ -148,12 +150,7 @@ public struct ToastModifier: ViewModifier {
         }
     }
 
-    private func handleToggleChange(_: Bool) {
-        presentToast()
-    }
-
     private func presentToast() {
-        cancelDismiss()
 
         withAnimation {
             isPresented = true
@@ -163,36 +160,52 @@ public struct ToastModifier: ViewModifier {
     }
 
     private func scheduleDismiss() {
+        cancelDismiss()
+        
         guard configuration.duration > 0 else { return }
 
-        cancelDismiss()
+        let duration = configuration.duration
 
-        let workItem = DispatchWorkItem {
-            withAnimation {
-                isPresented = false
+        dismissTask = Task {
+            do {
+                try await Task.sleep(for: .seconds(duration))
+            } catch {
+                return
             }
-            dismissWorkItem = nil
-            onDismiss?()
+
+            guard !Task.isCancelled else { return }
+
+            await MainActor.run {
+                completeDismiss()
+            }
         }
-
-        dismissWorkItem = workItem
-
-        DispatchQueue.main.asyncAfter(
-            deadline: .now() + configuration.duration,
-            execute: workItem
-        )
     }
 
     private func cancelDismiss() {
-        dismissWorkItem?.cancel()
-        dismissWorkItem = nil
+        dismissTask?.cancel()
+        dismissTask = nil
+    }
+
+    @MainActor
+    private func completeDismiss() {
+        guard isPresented else {
+            dismissTask = nil
+            return
+        }
+
+        withAnimation {
+            isPresented = false
+        }
+        dismissTask = nil
+
+        onDismiss?()
     }
 }
 
 public extension View {
-    /// Presents a toast controlled by a toggle binding. Change the toggle's value to display the toast.
+    /// Presents a toast controlled by a boolean trigger. Change the trigger's value to display the toast.
     func toast(
-        toggle: Binding<Bool>,
+        toggle: Bool,
         configuration: ToastConfiguration,
         onDismiss: (() -> Void)? = nil
     ) -> some View {
@@ -207,7 +220,7 @@ public extension View {
 
     /// Convenience overload for constructing a toast configuration inline.
     func toast(
-        toggle: Binding<Bool>,
+        toggle: Bool,
         message: String,
         systemImageName: String? = nil,
         duration: TimeInterval = 2.0,
