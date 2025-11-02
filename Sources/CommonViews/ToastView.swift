@@ -71,33 +71,34 @@ public struct ToastView: View {
     }
 }
 
-/// Presents a toast using a binding.
+/// Presents a toast using a toggle binding. Flip the toggle value to display the toast.
 public struct ToastModifier: ViewModifier {
-    @Binding private var isPresented: Bool
+    @Binding private var toggle: Bool
     private let configuration: ToastConfiguration
     private let onDismiss: (() -> Void)?
 
+    @State private var isPresented: Bool = false
     @State private var dismissWorkItem: DispatchWorkItem?
 
     public init(
-        isPresented: Binding<Bool>,
+        toggle: Binding<Bool>,
         configuration: ToastConfiguration,
         onDismiss: (() -> Void)? = nil
     ) {
-        self._isPresented = isPresented
+        self._toggle = toggle
         self.configuration = configuration
         self.onDismiss = onDismiss
     }
 
     public func body(content: Content) -> some View {
         content
+            .onChange(of: toggle, perform: handleToggleChange)
             .overlay(alignment: toastAlignment) {
                 Group {
                     if isPresented {
                         ToastView(configuration: configuration)
                             .padding(toastPadding)
                             .transition(toastTransition)
-                            .onAppear(perform: scheduleDismiss)
                             .onDisappear(perform: cancelDismiss)
                     }
                 }
@@ -147,6 +148,20 @@ public struct ToastModifier: ViewModifier {
         }
     }
 
+    private func handleToggleChange(_: Bool) {
+        presentToast()
+    }
+
+    private func presentToast() {
+        cancelDismiss()
+
+        withAnimation {
+            isPresented = true
+        }
+
+        scheduleDismiss()
+    }
+
     private func scheduleDismiss() {
         guard configuration.duration > 0 else { return }
 
@@ -155,8 +170,9 @@ public struct ToastModifier: ViewModifier {
         let workItem = DispatchWorkItem {
             withAnimation {
                 isPresented = false
-                onDismiss?()
             }
+            dismissWorkItem = nil
+            onDismiss?()
         }
 
         dismissWorkItem = workItem
@@ -174,22 +190,24 @@ public struct ToastModifier: ViewModifier {
 }
 
 public extension View {
+    /// Presents a toast controlled by a toggle binding. Change the toggle's value to display the toast.
     func toast(
-        isPresented: Binding<Bool>,
+        toggle: Binding<Bool>,
         configuration: ToastConfiguration,
         onDismiss: (() -> Void)? = nil
     ) -> some View {
         modifier(
             ToastModifier(
-                isPresented: isPresented,
+                toggle: toggle,
                 configuration: configuration,
                 onDismiss: onDismiss
             )
         )
     }
 
+    /// Convenience overload for constructing a toast configuration inline.
     func toast(
-        isPresented: Binding<Bool>,
+        toggle: Binding<Bool>,
         message: String,
         systemImageName: String? = nil,
         duration: TimeInterval = 2.0,
@@ -210,7 +228,7 @@ public extension View {
         )
 
         return toast(
-            isPresented: isPresented,
+            toggle: toggle,
             configuration: configuration,
             onDismiss: onDismiss
         )
