@@ -142,7 +142,7 @@ public struct CircularTimerButton: View {
         .onChange(of: resetToggle) {
             resetTimer()
         }
-        .onChange(of: status, initial: true) {_, newStatus in
+        .onChange(of: status, initial: false) {_, newStatus in
             switch newStatus {
             case .notStarted:
                 resetTimer()
