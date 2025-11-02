@@ -325,27 +325,29 @@ private extension Duration {
 #if DEBUG
 struct CircularTimerButtonPreviewHost: View {
     @State private var message = ""
-    @State private var reset1: Bool = false
-    @State private var reset2: Bool = false
-    @State private var reset3: Bool = false
-    @State private var isCompleted2 = false
-    @State private var elapsed1: TimeInterval = 0
-    @State private var elapsed3: TimeInterval = 0
+    @State private var status1: CircularTimerButtonStatus = .notStarted
+    @State private var status2: CircularTimerButtonStatus = .notStarted
+    @State private var status3: CircularTimerButtonStatus = .notStarted
+    @State private var timerSession1 = TimerSession(duration: 30)
+    @State private var timerSession2 = TimerSession(duration: 0)
+    @State private var timerSession3 = TimerSession(duration: 10)
 
     var body: some View {
         ScrollView {
             VStack(spacing: 40) {
                 HStack {
-                    
+
                     Text("Timer Buttons")
                         .font(.title)
-                    
-                    Button("Reset") {
-                        reset1.toggle()
-                        reset2.toggle()
-                        reset3.toggle()
-                        elapsed1 = 0
-                        elapsed3 = 0
+
+                    Button("Reset All") {
+                        status1 = .notStarted
+                        status2 = .notStarted
+                        status3 = .notStarted
+                        timerSession1.reset()
+                        timerSession2.reset()
+                        timerSession3.reset()
+                        message = ""
                     }.buttonStyle(.borderedProminent)
                 }
 
@@ -353,21 +355,31 @@ struct CircularTimerButtonPreviewHost: View {
                     Text("30 Second Timer")
                         .font(.headline)
                     CircularTimerButton(
-                        currentElapsed: $elapsed1,
-                        resetToggle: $reset1,
+                        currentElapsed: Binding(
+                            get: { timerSession1.elapsedTime },
+                            set: { _ in }
+                        ),
+                        status: $status1,
                         duration: .seconds(30),
+                        updateInterval: .seconds(0.1),
                         onStart: {
                             message = "Timer started..."
+                            timerSession1.start()
                         },
                         onPause: {
                             message = "Timer paused"
+                            timerSession1.pause()
+                        },
+                        onResume: {
+                            timerSession1.resume()
                         },
                         onCompletion: {
                             message = "30 second timer completed!"
-                        },
+                            timerSession1.complete()
+                        }
                     )
                     .frame(width: 150, height: 150)
-                    Text("Elapsed: \(String(format: "%.1f", elapsed1))s")
+                    Text("Elapsed: \(String(format: "%.1f", timerSession1.elapsedTime))s")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -376,13 +388,26 @@ struct CircularTimerButtonPreviewHost: View {
                     Text("0 Second Timer")
                         .font(.headline)
                     CircularTimerButton(
-                        resetToggle: $reset2,
-                        isCompleted: $isCompleted2,
+                        currentElapsed: Binding(
+                            get: { timerSession2.elapsedTime },
+                            set: { _ in }
+                        ),
+                        status: $status2,
                         duration: .seconds(0),
                         strokeWidth: 6,
                         progressColor: .blue,
+                        onStart: {
+                            timerSession2.start()
+                        },
+                        onPause: {
+                            timerSession2.pause()
+                        },
+                        onResume: {
+                            timerSession2.resume()
+                        },
                         onCompletion: {
-                            message = "1 minute timer completed!"
+                            message = "0 second timer completed!"
+                            timerSession2.complete()
                         }
                     )
                     .frame(width: 120, height: 120)
@@ -392,18 +417,32 @@ struct CircularTimerButtonPreviewHost: View {
                     Text("Custom Style (10s)")
                         .font(.headline)
                     CircularTimerButton(
-                        currentElapsed: $elapsed3,
-                        resetToggle: $reset3,
+                        currentElapsed: Binding(
+                            get: { timerSession3.elapsedTime },
+                            set: { _ in }
+                        ),
+                        status: $status3,
                         duration: .seconds(10),
+                        updateInterval: .seconds(0.1),
                         strokeWidth: 8,
                         progressColor: .purple,
                         completeColor: .orange,
+                        onStart: {
+                            timerSession3.start()
+                        },
+                        onPause: {
+                            timerSession3.pause()
+                        },
+                        onResume: {
+                            timerSession3.resume()
+                        },
                         onCompletion: {
                             message = "10 second timer completed!"
+                            timerSession3.complete()
                         }
                     )
                     .frame(width: 100, height: 100)
-                    Text("Elapsed: \(String(format: "%.1f", elapsed3))s")
+                    Text("Elapsed: \(String(format: "%.1f", timerSession3.elapsedTime))s")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
