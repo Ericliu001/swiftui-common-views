@@ -50,6 +50,7 @@ public struct CircularTimerButton: View {
     private let onPause: (() -> Void)?
     private let onCompletion: (() -> Void)?
     private let onTimeLapse: ((TimeInterval) -> Void)?
+    private let onTimerCompletion: (() -> Void)?
     private let updateInterval: Duration = .seconds(1)
 
     /// Creates a circular timer button.
@@ -76,6 +77,7 @@ public struct CircularTimerButton: View {
         onStart: ((ContinuousClock.Instant) -> Void)? = nil,
         onPause: (() -> Void)? = nil,
         onCompletion: (() -> Void)? = nil,
+        onTimerCompletion: (() -> Void)? = nil,
         onTimeLapse: ((TimeInterval) -> Void)? = nil,
     ) {
         self._elapsedTime = currentElapsed
@@ -87,6 +89,7 @@ public struct CircularTimerButton: View {
         self.completeColor = completeColor
         self.onCompletion = onCompletion
         self.onTimeLapse = onTimeLapse
+        self.onTimerCompletion = onTimerCompletion
         self.onStart = onStart
         self.onPause = onPause
     }
@@ -197,6 +200,7 @@ public struct CircularTimerButton: View {
     private func startTimer() {
         guard duration.asSeconds > 0 else {
             status = .isCompleted
+            onTimerCompletion?()
             return
         }
     
@@ -229,6 +233,7 @@ public struct CircularTimerButton: View {
                 if currentElapsed >= totalDuration {
                     await MainActor.run {
                         status = .isCompleted
+                        onTimerCompletion?()
                     }
                     break
                 }
