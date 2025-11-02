@@ -45,7 +45,7 @@ public struct CircularTimerButton: View {
     private let strokeWidth: CGFloat
     private let progressColor: Color
     private let completeColor: Color
-    private let onStart: ((ContinuousClock.Instant) -> Void)?
+    private let onStart: (() -> Void)?
     private let onPause: (() -> Void)?
     private let onCompletion: (() -> Void)?
     private let onTimeLapse: ((TimeInterval) -> Void)?
@@ -73,7 +73,7 @@ public struct CircularTimerButton: View {
         strokeWidth: CGFloat = 4,
         progressColor: Color = .accentColor,
         completeColor: Color = .green,
-        onStart: ((ContinuousClock.Instant) -> Void)? = nil,
+        onStart: (() -> Void)? = nil,
         onPause: (() -> Void)? = nil,
         onCompletion: (() -> Void)? = nil,
         onTimerCompletion: (() -> Void)? = nil,
@@ -141,7 +141,7 @@ public struct CircularTimerButton: View {
         .onChange(of: resetToggle) {
             resetTimer()
         }
-        .onChange(of: status, initial: false) {_, newStatus in
+        .onChange(of: status, initial: true) {_, newStatus in
             switch newStatus {
             case .notStarted:
                 resetTimer()
@@ -154,7 +154,11 @@ public struct CircularTimerButton: View {
             default:
                 return
             }
-            
+        }
+        .onDisappear {
+            // Cancel Tasks
+            task?.cancel()
+            task = nil
         }
     }
 
@@ -197,7 +201,7 @@ public struct CircularTimerButton: View {
         }
     
         let startTime = ContinuousClock.now
-        onStart?(startTime)
+        onStart?()
 
         task?.cancel()
         task = Task {
@@ -335,7 +339,7 @@ struct CircularTimerButtonPreviewHost: View {
                         currentElapsed: $elapsed1,
                         resetToggle: $reset1,
                         duration: .seconds(30),
-                        onStart: {_ in
+                        onStart: {
                             message = "Timer started..."
                         },
                         onPause: {
