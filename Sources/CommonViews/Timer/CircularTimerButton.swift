@@ -25,12 +25,9 @@ public enum CircularTimerButtonStatus {
 /// Example usage:
 /// ```swift
 /// @State private var timerSession = TimerSession(duration: 60)
-/// @State private var status: CircularTimerButtonStatus = .notStarted
 ///
 /// CircularTimerButton(
 ///     timerSession: $timerSession,
-///     status: $status,
-///     duration: .seconds(60),
 ///     onStart: {
 ///         timerSession.start()
 ///     },
@@ -47,7 +44,6 @@ public struct CircularTimerButton: View {
     @Binding private var timerSession: TimerSession
     @State private var status: CircularTimerButtonStatus = .notStarted
 
-    private let duration: Duration
     private let strokeWidth: CGFloat
     private let progressColor: Color
     private let completeColor: Color
@@ -63,17 +59,18 @@ public struct CircularTimerButton: View {
     ///
     /// - Parameters:
     ///   - timerSession: A binding to the timer session to track elapsed time
-    ///   - isCompleted: A binding to track completion state
-    ///   - duration: The total duration of the timer
+    ///   - updateInterval: How frequently the timer updates progress
     ///   - strokeWidth: The width of the progress ring
     ///   - progressColor: The color of the progress ring while running
     ///   - completeColor: The color when the timer completes
-    ///   - onCompletion: Callback triggered when timer completes
     ///   - onStart: Optional callback when timer starts
     ///   - onPause: Optional callback when timer is paused
+    ///   - onResume: Optional callback when timer resumes
+    ///   - onCompletionState: Callback triggered when the timer finishes
+    ///   - onTimerCompletion: Callback fired when the timer reaches the duration boundary
+    ///   - onTimeLapse: Callback invoked with elapsed seconds on each tick
     public init(
         timerSession: Binding<TimerSession>,
-        duration: Duration = .seconds(60),
         updateInterval: Duration = .seconds(1),
         strokeWidth: CGFloat = 4,
         progressColor: Color = .accentColor,
@@ -86,7 +83,6 @@ public struct CircularTimerButton: View {
         onTimeLapse: ((TimeInterval) -> Void)? = nil,
     ) {
         self._timerSession = timerSession
-        self.duration = duration
         self.updateInterval = updateInterval
         self.strokeWidth = strokeWidth
         self.progressColor = progressColor
@@ -221,9 +217,9 @@ public struct CircularTimerButton: View {
 
     private func startTimer() {
         onStart?()
-        guard duration.asSeconds > 0 else {
+        guard timerSession.duration > 0 else {
             status = .isCompleted
-                onTimerCompletion?()
+            onTimerCompletion?()
             return
         }
     
@@ -235,11 +231,10 @@ public struct CircularTimerButton: View {
         onResume?()
         task?.cancel()
         task = Task {
-            let totalDuration = duration.asSeconds
-            
             while !Task.isCancelled {
                 guard !Task.isCancelled else { break }
                 let elapsedSeconds = timerSession.elapsedTime
+                let totalDuration = timerSession.duration
                 
                 // Check if completed
                 if elapsedSeconds >= totalDuration {
@@ -262,10 +257,14 @@ public struct CircularTimerButton: View {
         _ elapsedSeconds: TimeInterval,
         _ totalDuration: Double
     ) {
-        self.progressValue = min(
-            elapsedSeconds / totalDuration,
-            1.0
-        )
+        if totalDuration <= 0 {
+            self.progressValue = 1.0
+        } else {
+            self.progressValue = min(
+                elapsedSeconds / totalDuration,
+                1.0
+            )
+        }
         self.onTimeLapse?(elapsedSeconds)
         print("Timelapse \(elapsedSeconds)")
     }
@@ -276,7 +275,7 @@ public struct CircularTimerButton: View {
         task = nil
         
         let elapsedSeconds = timerSession.elapsedTime
-        let totalDuration = duration.asSeconds
+        let totalDuration = timerSession.duration
         postProgressValue(elapsedSeconds, totalDuration)
     }
 
@@ -331,15 +330,6 @@ public struct CircularTimerButton: View {
     }
 }
 
-private extension Duration {
-    var asSeconds: Double {
-        let comps = self.components
-        return Double(comps.seconds) + Double(
-            comps.attoseconds
-        ) / 1_000_000_000_000_000_000
-    }
-}
-
 #if DEBUG
 struct CircularTimerButtonPreviewHost: View {
     @State private var message = ""
@@ -374,7 +364,6 @@ struct CircularTimerButtonPreviewHost: View {
                         .font(.headline)
                     CircularTimerButton(
                         timerSession: $timerSession1,
-                        duration: .seconds(30),
                         updateInterval: .seconds(0.1),
                         onStart: {
                             message = "Timer started..."
@@ -405,7 +394,6 @@ struct CircularTimerButtonPreviewHost: View {
                         .font(.headline)
                     CircularTimerButton(
                         timerSession: $timerSession2,
-                        duration: .seconds(0),
                         strokeWidth: 6,
                         progressColor: .blue,
                         onStart: {
@@ -430,7 +418,6 @@ struct CircularTimerButtonPreviewHost: View {
                         .font(.headline)
                     CircularTimerButton(
                         timerSession: $timerSession3,
-                        duration: .seconds(10),
                         updateInterval: .seconds(0.1),
                         strokeWidth: 8,
                         progressColor: .purple,

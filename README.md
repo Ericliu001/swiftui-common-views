@@ -145,7 +145,6 @@ import CommonViews
 
 CircularTimerButton(
     timerSession: $timerSession,
-    duration: .seconds(60),
     strokeWidth: 4,
     progressColor: .blue,
     completeColor: .green,

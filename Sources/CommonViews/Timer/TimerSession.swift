@@ -75,7 +75,8 @@ public class TimerSession {
     public func resume() {
         status = .isResumed
         
-        guard status == .isPaused, let pausedAt = pausedAt else { return }
+        guard let pausedAt = pausedAt else { return }
+        
 
         // Adjust startTime to account for the paused duration
         let delta: Duration = ContinuousClock.now - pausedAt
