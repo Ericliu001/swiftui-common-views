@@ -302,7 +302,11 @@ public struct CircularTimerButton: View {
     private func handleTap() {
         switch status {
         case .notStarted:
-            timerSession.start()
+            if timerSession.duration <= .zero {
+                timerSession.complete()
+            } else {
+                timerSession.start()
+            }
         case .inProgress, .isResumed:
             timerSession.pause()
         case .isPaused:
