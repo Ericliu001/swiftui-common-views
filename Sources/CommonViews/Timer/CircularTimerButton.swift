@@ -179,10 +179,10 @@ public struct CircularTimerButton: View {
             progressRing(size: size)
             buttonContent(size: size)
         }
-        .onChange(of: status, initial: true) {_, newStatus in
+        .onChange(of: status) {_, newStatus in
             switch newStatus {
             case .notStarted:
-                timerSession.reset()
+                // Don't change TimerSession status at the init state.
                 resetTimer()
             case .isStarted:
                 timerSession.start()
@@ -226,18 +226,17 @@ public struct CircularTimerButton: View {
     private func startTimer() {
         guard duration.asSeconds > 0 else {
             status = .isCompleted
-            onTimerCompletion?()
+                onTimerCompletion?()
             return
         }
     
-        onStart?()
+            onStart?()
         
         resumeTimer()
     }
     
     private func resumeTimer(){
         onResume?()
-        timerSession.resume()
         task?.cancel()
         task = Task {
             let totalDuration = duration.asSeconds
@@ -255,23 +254,34 @@ public struct CircularTimerButton: View {
                     break
                 }
                 
-                DispatchQueue.main.async {
-                    self.progressValue = min(
-                        elapsedSeconds / totalDuration,
-                        1.0
-                    )
-                    self.onTimeLapse?(elapsedSeconds)
-                    print("Timelapse \(elapsedSeconds)")
+                await MainActor.run {
+                    postProgressValue(elapsedSeconds, totalDuration)
                 }
                 try? await Task.sleep(for: updateInterval)
             }
         }
     }
 
+    private func postProgressValue(
+        _ elapsedSeconds: TimeInterval,
+        _ totalDuration: Double
+    ) {
+        self.progressValue = min(
+            elapsedSeconds / totalDuration,
+            1.0
+        )
+        self.onTimeLapse?(elapsedSeconds)
+        print("Timelapse \(elapsedSeconds)")
+    }
+    
     private func pauseTimer() {
+        onPause?()
         task?.cancel()
         task = nil
-        onPause?()
+        
+        let elapsedSeconds = timerSession.elapsedTime
+        let totalDuration = duration.asSeconds
+        postProgressValue(elapsedSeconds, totalDuration)
     }
 
     private func resetTimer() {
@@ -389,9 +399,11 @@ struct CircularTimerButtonPreviewHost: View {
                         }
                     )
                     .frame(width: 150, height: 150)
-                    Text("Elapsed: \(String(format: "%.1f", timerSession1.elapsedTime))s")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    Text(
+                        "Elapsed: \(String(format: "%.1f", timerSession1.elapsedTime))s"
+                    )
+                    .font(.caption)
+                    .foregroundColor(.secondary)
                 }
 
                 VStack(spacing: 10) {
@@ -444,9 +456,11 @@ struct CircularTimerButtonPreviewHost: View {
                         }
                     )
                     .frame(width: 100, height: 100)
-                    Text("Elapsed: \(String(format: "%.1f", timerSession3.elapsedTime))s")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    Text(
+                        "Elapsed: \(String(format: "%.1f", timerSession3.elapsedTime))s"
+                    )
+                    .font(.caption)
+                    .foregroundColor(.secondary)
                 }
 
                 if !message.isEmpty {
@@ -467,4 +481,3 @@ struct CircularTimerButtonPreviewHost: View {
     CircularTimerButtonPreviewHost()
 }
 #endif
-
