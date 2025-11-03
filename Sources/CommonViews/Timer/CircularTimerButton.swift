@@ -151,15 +151,23 @@ public struct CircularTimerButton: View {
                     .foregroundColor(completeColor)
             } else if isRunning {
                 // Running state - show timer
-                Text(formatTime(timerSession.elapsedTime))
-                    .font(
-                        .system(
-                            size: size * 0.25,
-                            weight: .semibold,
-                            design: .monospaced
+                ZStack(alignment: .top) {
+                    Text(formatTime(timerSession.elapsedTime))
+                        .font(
+                            .system(
+                                size: size * 0.25,
+                                weight: .semibold,
+                                design: .monospaced
+                            )
                         )
-                    )
-                    .foregroundColor(progressColor)
+                        .foregroundColor(progressColor)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    Image(systemName: "pause.fill")
+                        .font(.system(size: size * 0.18, weight: .semibold))
+                        .foregroundColor(progressColor)
+                        .padding(size * 0.06)
+                }
             } else {
                 // Initial state - show play button
                 Image(systemName: "play.fill")
