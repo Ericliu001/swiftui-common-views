@@ -185,7 +185,6 @@ struct ConfettiView: View {
 
     private func triggerLaunchFeedback() {
         triggerHaptic()
-        playLaunchSound()
     }
 
 #if canImport(UIKit)
@@ -197,13 +196,6 @@ struct ConfettiView: View {
 #else
     private func triggerHaptic() {}
 #endif
-
-    private func playLaunchSound() {
-        guard enableSound else { return }
-#if canImport(AudioToolbox)
-        AudioServicesPlaySystemSound(1030) // 1030 | Sherwood_Forest.caf   
-#endif
-    }
 
     private func createConfettiPiece(in size: CGSize) -> ConfettiPiece {
         let startX = CGFloat.random(

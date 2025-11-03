@@ -151,6 +151,9 @@ public struct ToastModifier: ViewModifier {
     }
 
     private func presentToast() {
+        guard !configuration.message.isEmpty else {
+            return
+        }
 
         withAnimation {
             isPresented = true
