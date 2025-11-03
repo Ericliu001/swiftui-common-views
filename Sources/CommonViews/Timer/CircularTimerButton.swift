@@ -180,21 +180,17 @@ public struct CircularTimerButton: View {
             buttonContent(size: size)
         }
         .onChange(of: status) {_, newStatus in
+            // Don't change TimerSession status.
             switch newStatus {
             case .notStarted:
-                // Don't change TimerSession status at the init state.
                 resetTimer()
             case .isStarted:
-                timerSession.start()
                 startTimer()
             case .isPaused:
-                timerSession.pause()
                 pauseTimer()
             case .isResumed:
-                timerSession.resume()
                 resumeTimer()
             case .isCompleted:
-                timerSession.complete()
                 completeTimer()
             default:
                 return
@@ -205,7 +201,7 @@ public struct CircularTimerButton: View {
             case .notStarted:
                 status = .notStarted
             case .inProgress:
-                status = .isResumed
+                status = .isStarted
             case .isPaused:
                 status = .isPaused
             case .isResumed:
@@ -224,13 +220,13 @@ public struct CircularTimerButton: View {
     // MARK: - Timer Control
 
     private func startTimer() {
+        onStart?()
         guard duration.asSeconds > 0 else {
             status = .isCompleted
                 onTimerCompletion?()
             return
         }
     
-            onStart?()
         
         resumeTimer()
     }
@@ -293,24 +289,22 @@ public struct CircularTimerButton: View {
     }
 
     private func completeTimer() {
+        onCompletionState?()
         progressValue = 1
         task?.cancel()
         task = nil
-        onCompletionState?()
     }
 
     private func handleTap() {
         switch status {
         case .notStarted:
-            status = .isStarted
-        case .isStarted:
-            status = .isPaused
+            timerSession.start()
+        case .isStarted, .isResumed:
+            timerSession.pause()
         case .isPaused:
-            status = .isResumed
-        case .isResumed:
-            status = .isPaused
+            timerSession.resume()
         case .isCompleted:
-            print("completed")
+            timerSession.complete()
         }
     }
 

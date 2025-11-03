@@ -73,6 +73,8 @@ public class TimerSession {
 
     /// Resumes the timer from where it was paused
     public func resume() {
+        status = .isResumed
+        
         guard status == .isPaused, let pausedAt = pausedAt else { return }
 
         // Adjust startTime to account for the paused duration
@@ -80,7 +82,6 @@ public class TimerSession {
         pausedDuration += delta
 
         self.pausedAt = nil
-        status = .isResumed
     }
 
     /// Resets the timer to its initial state
