@@ -8,9 +8,13 @@ This package includes the following SwiftUI components:
 
 - **AutoScrollingListView** - A list view that automatically scrolls to new items as they arrive from an AsyncStream, with gradient fade effects
 - **CircularProgressButton** - A customizable button with circular progress indicator activated by long press
+- **CircularTimerButton** - A timer button with circular progress indicator and elapsed time display
+- **ConfettiView** - An animated confetti celebration effect with haptics and sound
 - **LoadingBubbleView** - An animated loading indicator with a spinning circular design
 - **PlusButtonWithShadow** - A styled plus button with shadow effects
 - **ShimmeringView** - A shimmering placeholder view for loading states (DEBUG only)
+- **TimerSession** - A timer session management class for tracking elapsed time
+- **ToastView** - A customizable toast notification view with multiple placement options
 
 ## Requirements
 
@@ -128,6 +132,86 @@ import CommonViews
 
 ShimmeringView(color: .gray)
     .frame(height: 20)
+```
+
+### CircularTimerButton
+
+A timer button that displays elapsed time with circular progress:
+
+```swift
+import CommonViews
+
+@State private var timerSession = TimerSession(duration: 60)
+
+CircularTimerButton(
+    timerSession: $timerSession,
+    duration: .seconds(60),
+    strokeWidth: 4,
+    progressColor: .blue,
+    completeColor: .green,
+    onStart: {
+        timerSession.start()
+    },
+    onCompletionState: {
+        print("Timer completed!")
+    }
+)
+.frame(width: 100, height: 100)
+```
+
+### ToastView
+
+A customizable toast notification with multiple placement options:
+
+```swift
+import CommonViews
+
+@State private var showToast = false
+
+SomeView()
+    .toast(
+        toggle: showToast,
+        message: "Task completed successfully!",
+        systemImageName: "checkmark.circle",
+        duration: 2.0,
+        placement: .top
+    )
+```
+
+### ConfettiView
+
+An animated confetti celebration effect:
+
+```swift
+import CommonViews
+
+@State private var showConfetti = false
+
+Button("Celebrate!") {
+    showConfetti.toggle()
+}
+.confetti(
+    toggle: showConfetti,
+    intensity: 100,
+    colors: [.red, .orange, .yellow, .green, .blue, .purple],
+    enableHaptics: true,
+    enableSound: true
+)
+```
+
+### TimerSession
+
+A timer session management class:
+
+```swift
+import CommonViews
+
+let timerSession = TimerSession(duration: 60)
+timerSession.start()
+// Use timerSession.elapsedTime to get current elapsed time
+timerSession.pause()
+timerSession.resume()
+timerSession.complete()
 ```
 
 ## License

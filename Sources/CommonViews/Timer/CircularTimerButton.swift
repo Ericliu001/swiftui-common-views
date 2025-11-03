@@ -245,17 +245,6 @@ public struct CircularTimerButton: View {
             while !Task.isCancelled {
                 guard !Task.isCancelled else { break }
                 let elapsedSeconds = timerSession.elapsedTime
-
-
-                DispatchQueue.main.async {
-                    self.progressValue = min(
-                        elapsedSeconds / totalDuration,
-                        1.0
-                    )
-                    self.onTimeLapse?(elapsedSeconds)
-                    print("Timelapse \(elapsedSeconds)")
-                }
-                
                 
                 // Check if completed
                 if elapsedSeconds >= totalDuration {
@@ -266,6 +255,14 @@ public struct CircularTimerButton: View {
                     break
                 }
                 
+                DispatchQueue.main.async {
+                    self.progressValue = min(
+                        elapsedSeconds / totalDuration,
+                        1.0
+                    )
+                    self.onTimeLapse?(elapsedSeconds)
+                    print("Timelapse \(elapsedSeconds)")
+                }
                 try? await Task.sleep(for: updateInterval)
             }
         }
