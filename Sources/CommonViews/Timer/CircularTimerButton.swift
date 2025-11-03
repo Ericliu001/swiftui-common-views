@@ -8,9 +8,9 @@
 import SwiftUI
 
 
-public enum CircularTimerButtonStatus {
+private enum CircularTimerButtonStatus {
     case notStarted
-    case isStarted
+    case inProgress
     case isPaused
     case isResumed
     case isCompleted
@@ -71,7 +71,7 @@ public struct CircularTimerButton: View {
     ///   - onTimeLapse: Callback invoked with elapsed seconds on each tick
     public init(
         timerSession: Binding<TimerSession>,
-        updateInterval: Duration = .seconds(1),
+        updateInterval: Duration = .seconds(0.25),
         strokeWidth: CGFloat = 4,
         progressColor: Color = .accentColor,
         completeColor: Color = .green,
@@ -100,7 +100,7 @@ public struct CircularTimerButton: View {
     }
     
     private var isRunning: Bool {
-        status == .isStarted || status == .isResumed
+        status == .inProgress || status == .isResumed
     }
 
     // MARK: - Time Formatting
@@ -180,7 +180,7 @@ public struct CircularTimerButton: View {
             switch newStatus {
             case .notStarted:
                 resetTimer()
-            case .isStarted:
+            case .inProgress:
                 startTimer()
             case .isPaused:
                 pauseTimer()
@@ -197,13 +197,18 @@ public struct CircularTimerButton: View {
             case .notStarted:
                 status = .notStarted
             case .inProgress:
-                status = .isStarted
+                status = .inProgress
             case .isPaused:
                 status = .isPaused
             case .isResumed:
                 status = .isResumed
             case .isCompleted:
                 status = .isCompleted
+            }
+        }
+        .onAppear{
+            if status == .isResumed || status == .inProgress {
+                resumeTimer()
             }
         }
         .onDisappear {
@@ -298,7 +303,7 @@ public struct CircularTimerButton: View {
         switch status {
         case .notStarted:
             timerSession.start()
-        case .isStarted, .isResumed:
+        case .inProgress, .isResumed:
             timerSession.pause()
         case .isPaused:
             timerSession.resume()
