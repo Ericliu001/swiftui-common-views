@@ -209,7 +209,7 @@ struct ConfettiView: View {
             y: startY,
             rotation: Double.random(in: 0...360),
             rotation3D: Double.random(in: 0...360),
-            scale: CGFloat.random(in: 0.5...1.5),
+            scale: CGFloat.random(in: 1...1.5),
             opacity: 1.0,
             color: colors.randomElement() ?? .blue,
             shape: [.ellipse, .square, .triangle, .rectangle, .star]
