@@ -24,13 +24,18 @@ public enum CircularTimerButtonStatus {
 ///
 /// Example usage:
 /// ```swift
-/// @State private var elapsed: TimeInterval = 0
+/// @State private var timerSession = TimerSession(duration: 60)
+/// @State private var status: CircularTimerButtonStatus = .notStarted
 ///
 /// CircularTimerButton(
-///     currentElapsed: $elapsed,
+///     timerSession: $timerSession,
+///     status: $status,
 ///     duration: .seconds(60),
-///     onCompletion: {
-///         print("Timer completed after \(elapsed) seconds!")
+///     onStart: {
+///         timerSession.start()
+///     },
+///     onCompletionState: {
+///         print("Timer completed after \(timerSession.elapsedTime) seconds!")
 ///     }
 /// )
 /// .frame(width: 100, height: 100)
@@ -38,10 +43,9 @@ public enum CircularTimerButtonStatus {
 public struct CircularTimerButton: View {
     @State private var progressValue: Double = 0.0
     @State private var task: Task<Void, Never>?
-    
-    @Binding private var elapsedTime: TimeInterval
-    @Binding private var resetToggle: Bool
-    @Binding private var status: CircularTimerButtonStatus
+
+    @Binding private var timerSession: TimerSession
+    @State private var status: CircularTimerButtonStatus = .notStarted
 
     private let duration: Duration
     private let strokeWidth: CGFloat
@@ -58,7 +62,7 @@ public struct CircularTimerButton: View {
     /// Creates a circular timer button.
     ///
     /// - Parameters:
-    ///   - currentElapsed: A binding to track the current elapsed time in seconds
+    ///   - timerSession: A binding to the timer session to track elapsed time
     ///   - isCompleted: A binding to track completion state
     ///   - duration: The total duration of the timer
     ///   - strokeWidth: The width of the progress ring
@@ -68,10 +72,7 @@ public struct CircularTimerButton: View {
     ///   - onStart: Optional callback when timer starts
     ///   - onPause: Optional callback when timer is paused
     public init(
-        currentElapsed: Binding<TimeInterval> = .constant(0),
-        resetToggle: Binding<Bool> = .constant(false),
-        isCompleted: Binding<Bool> = .constant(false),
-        status: Binding<CircularTimerButtonStatus> = .constant(.notStarted),
+        timerSession: Binding<TimerSession>,
         duration: Duration = .seconds(60),
         updateInterval: Duration = .seconds(1),
         strokeWidth: CGFloat = 4,
@@ -84,9 +85,7 @@ public struct CircularTimerButton: View {
         onTimerCompletion: (() -> Void)? = nil,
         onTimeLapse: ((TimeInterval) -> Void)? = nil,
     ) {
-        self._elapsedTime = currentElapsed
-        self._resetToggle = resetToggle
-        self._status = status
+        self._timerSession = timerSession
         self.duration = duration
         self.updateInterval = updateInterval
         self.strokeWidth = strokeWidth
@@ -145,30 +144,6 @@ public struct CircularTimerButton: View {
                 )
                 .animation(.linear(duration: 0.16), value: progressValue)
         }
-        .onChange(of: resetToggle) {
-            resetTimer()
-        }
-        .onChange(of: status, initial: true) {_, newStatus in
-            switch newStatus {
-            case .notStarted:
-                resetTimer()
-            case .isStarted:
-                startTimer()
-            case .isPaused:
-                pauseTimer()
-            case .isResumed:
-                resumeTimer()
-            case .isCompleted:
-                completeTimer()
-            default:
-                return
-            }
-        }
-        .onDisappear {
-            // Cancel Tasks
-            task?.cancel()
-            task = nil
-        }
     }
 
     private func buttonContent(size: CGFloat) -> some View {
@@ -180,7 +155,7 @@ public struct CircularTimerButton: View {
                     .foregroundColor(completeColor)
             } else if isRunning {
                 // Running state - show timer
-                Text(formatTime(elapsedTime))
+                Text(formatTime(timerSession.elapsedTime))
                     .font(
                         .system(
                             size: size * 0.25,
@@ -204,6 +179,46 @@ public struct CircularTimerButton: View {
             progressRing(size: size)
             buttonContent(size: size)
         }
+        .onChange(of: status, initial: true) {_, newStatus in
+            switch newStatus {
+            case .notStarted:
+                timerSession.reset()
+                resetTimer()
+            case .isStarted:
+                timerSession.start()
+                startTimer()
+            case .isPaused:
+                timerSession.pause()
+                pauseTimer()
+            case .isResumed:
+                timerSession.resume()
+                resumeTimer()
+            case .isCompleted:
+                timerSession.complete()
+                completeTimer()
+            default:
+                return
+            }
+        }
+        .onChange(of: timerSession.status, initial: true) {_, newStatus in
+            switch newStatus {
+            case .notStarted:
+                status = .notStarted
+            case .inProgress:
+                status = .isResumed
+            case .isPaused:
+                status = .isPaused
+            case .isResumed:
+                status = .isResumed
+            case .isCompleted:
+                status = .isCompleted
+            }
+        }
+        .onDisappear {
+            // Cancel Tasks
+            task?.cancel()
+            task = nil
+        }
     }
 
     // MARK: - Timer Control
@@ -222,15 +237,16 @@ public struct CircularTimerButton: View {
     
     private func resumeTimer(){
         onResume?()
+        timerSession.resume()
         task?.cancel()
         task = Task {
             let totalDuration = duration.asSeconds
             
             while !Task.isCancelled {
                 guard !Task.isCancelled else { break }
-                let elapsedSeconds = elapsedTime
-                
-                
+                let elapsedSeconds = timerSession.elapsedTime
+
+
                 DispatchQueue.main.async {
                     self.progressValue = min(
                         elapsedSeconds / totalDuration,
@@ -308,7 +324,7 @@ public struct CircularTimerButton: View {
         )
         .accessibilityValue(
             progressValue >= 1 ? "Done" :
-                isRunning ? formatTime(elapsedTime) : ""
+                isRunning ? formatTime(timerSession.elapsedTime) : ""
         )
         .accessibilityAddTraits(.isButton)
     }
@@ -356,11 +372,7 @@ struct CircularTimerButtonPreviewHost: View {
                     Text("30 Second Timer")
                         .font(.headline)
                     CircularTimerButton(
-                        currentElapsed: Binding(
-                            get: { timerSession1.elapsedTime },
-                            set: { _ in }
-                        ),
-                        status: $status1,
+                        timerSession: $timerSession1,
                         duration: .seconds(30),
                         updateInterval: .seconds(0.1),
                         onStart: {
@@ -389,11 +401,7 @@ struct CircularTimerButtonPreviewHost: View {
                     Text("0 Second Timer")
                         .font(.headline)
                     CircularTimerButton(
-                        currentElapsed: Binding(
-                            get: { timerSession2.elapsedTime },
-                            set: { _ in }
-                        ),
-                        status: $status2,
+                        timerSession: $timerSession2,
                         duration: .seconds(0),
                         strokeWidth: 6,
                         progressColor: .blue,
@@ -418,11 +426,7 @@ struct CircularTimerButtonPreviewHost: View {
                     Text("Custom Style (10s)")
                         .font(.headline)
                     CircularTimerButton(
-                        currentElapsed: Binding(
-                            get: { timerSession3.elapsedTime },
-                            set: { _ in }
-                        ),
-                        status: $status3,
+                        timerSession: $timerSession3,
                         duration: .seconds(10),
                         updateInterval: .seconds(0.1),
                         strokeWidth: 8,
