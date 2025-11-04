@@ -279,7 +279,6 @@ public struct CircularTimerButton: View {
             )
         }
         self.onTimeLapse?(elapsedSeconds)
-        print("Timelapse \(elapsedSeconds)")
     }
     
     private func pauseTimer() {
