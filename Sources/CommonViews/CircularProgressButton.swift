@@ -166,7 +166,7 @@ public struct CircularProgressButton<Content: View>: View {
             progressRing(size: size)
             buttonContent(size: size)
         }
-        .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
+        .shadow(color: progressColor.opacity(0.15), radius: 4, x: 0, y: 2)
         .scaleEffect(isPressed ? 0.95 : 1)
         .animation(
             .spring(response: 0.2, dampingFraction: 0.7),
