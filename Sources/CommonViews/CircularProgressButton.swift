@@ -114,16 +114,18 @@ public struct CircularProgressButton<Content: View>: View {
         ZStack {
             // Base circle
             Circle()
-                .fill(backgroundColor)
-                .background(.regularMaterial, in: Circle())
+                .fill(progressColor.opacity(0.2))
+                .background(.ultraThinMaterial, in: Circle())
+                .glassEffect()
+                .shadow(color: progressColor.opacity(0.15), radius: 2, x: 1, y: 2)
 
             // Progress ring background
-            Circle()
-                .stroke(progressColor.opacity(0.2), lineWidth: strokeWidth)
-                .frame(
-                    width: size - strokeWidth,
-                    height: size - strokeWidth
-                )
+//            Circle()
+//                .stroke(progressColor.opacity(0.2), lineWidth: strokeWidth)
+//                .frame(
+//                    width: size - strokeWidth,
+//                    height: size - strokeWidth
+//                )
 
             // Progress ring
             Circle()
@@ -138,7 +140,7 @@ public struct CircularProgressButton<Content: View>: View {
                 .rotationEffect(.degrees(-90)) // Start from top
                 .frame(
                     width: size - strokeWidth,
-                    height: size - strokeWidth
+                    height: size - strokeWidth,
                 )
                 .animation(.linear(duration: 0.16), value: progressValue)
                 .animation(.easeInOut(duration: 0.4), value: isCompleted)
@@ -166,7 +168,6 @@ public struct CircularProgressButton<Content: View>: View {
             progressRing(size: size)
             buttonContent(size: size)
         }
-        .shadow(color: progressColor.opacity(0.15), radius: 4, x: 0, y: 2)
         .scaleEffect(isPressed ? 0.95 : 1)
         .animation(
             .spring(response: 0.2, dampingFraction: 0.7),
@@ -362,7 +363,6 @@ struct CircularProgressButtonPreviewHost: View {
                     strokeWidth: 8,
                     progressColor: .purple,
                     completeColor: .orange,
-                    backgroundColor: .white,
                     onCompletion: {
                         message = "Custom style completed!"
                     }
@@ -397,6 +397,11 @@ struct CircularProgressButtonPreviewHost: View {
 
 #Preview {
     CircularProgressButtonPreviewHost()
+}
+
+#Preview("Dark") {
+    CircularProgressButtonPreviewHost()
+        .preferredColorScheme(.dark)
 }
 #endif
 

@@ -17,11 +17,19 @@ public struct PlusButtonWithShadow: View {
         ZStack {
             Circle()
                 .fill(color)
-                .frame(width: 44, height: 44)
-                .shadow(radius: 2, x: 2, y: 2)
+                .frame(width: 50, height: 50)
+                .opacity(0.75)
+                .glassEffect()
+                .shadow(radius: 2, x: 1, y: 1)
             Image(systemName: "plus")
-                .font(.title2.weight(.bold))
+                .font(.title.weight(.bold))
                 .foregroundColor(.white)
         }
     }
+}
+
+#Preview {
+    PlusButtonWithShadow()
+        .padding()
+        .previewLayout(.sizeThatFits)
 }

@@ -123,6 +123,7 @@ public struct CircularTimerButton: View {
                     width: size - strokeWidth,
                     height: size - strokeWidth
                 )
+                .glassEffect()
 
             // Progress ring
             Circle()

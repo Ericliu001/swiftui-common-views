@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "CommonViews",
     platforms: [
-                .iOS(.v18),
+                .iOS(.v26),
                 .macOS(.v15)
                ],
     products: [
