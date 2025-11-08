@@ -118,7 +118,7 @@ public struct CircularTimerButton: View {
         ZStack {
             // Progress ring background
             Circle()
-                .stroke(progressColor.opacity(0.2), lineWidth: strokeWidth)
+                .stroke(isCompleted ? completeColor.opacity(0.2) : progressColor.opacity(0.2), lineWidth: strokeWidth)
                 .frame(
                     width: size - strokeWidth,
                     height: size - strokeWidth
