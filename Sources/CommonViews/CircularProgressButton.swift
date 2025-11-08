@@ -114,7 +114,7 @@ public struct CircularProgressButton<Content: View>: View {
         ZStack {
             // Base circle
             Circle()
-                .fill(progressColor.opacity(0.2))
+                .fill(isCompleted ? completeColor.opacity(0.2) : progressColor.opacity(0.2))
                 .background(.ultraThinMaterial, in: Circle())
                 .glassEffect()
                 .shadow(color: progressColor.opacity(0.15), radius: 2, x: 1, y: 2)
