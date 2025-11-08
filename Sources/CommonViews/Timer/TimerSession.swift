@@ -43,6 +43,10 @@ public class TimerSession {
         // Convert Duration to seconds as Double
         return dur.components.seconds.double + dur.components.attoseconds.double / 1e18
     }
+    
+    public var timeRemaining: TimeInterval {
+        max(0, duration - elapsedTime)
+    }
 
     public init(
         id: UUID = UUID(),

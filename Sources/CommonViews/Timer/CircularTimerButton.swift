@@ -38,7 +38,7 @@ private enum CircularTimerButtonStatus {
 /// .frame(width: 100, height: 100)
 /// ```
 public struct CircularTimerButton: View {
-    @State private var progressValue: Double = 0.0
+    @State private var progressValue: Double = 1.0
     @State private var task: Task<Void, Never>?
 
     @Binding private var timerSession: TimerSession
@@ -113,6 +113,7 @@ public struct CircularTimerButton: View {
 
     // MARK: - Subviews
 
+
     private func progressRing(size: CGFloat) -> some View {
         ZStack {
             // Progress ring background
@@ -125,7 +126,10 @@ public struct CircularTimerButton: View {
 
             // Progress ring
             Circle()
-                .trim(from: 0, to: isCompleted ? 1 : progressValue)
+                .trim(
+                    from: 0,
+                    to: isCompleted ? 0 : progressValue
+                )
                 .stroke(
                     isCompleted ? completeColor : progressColor,
                     style: StrokeStyle(
@@ -152,7 +156,7 @@ public struct CircularTimerButton: View {
             } else if isRunning {
                 // Running state - show timer
                 ZStack(alignment: .top) {
-                    Text(formatTime(timerSession.elapsedTime))
+                    Text(formatTime(timerSession.timeRemaining))
                         .font(
                             .system(
                                 size: size * 0.25,
@@ -246,11 +250,11 @@ public struct CircularTimerButton: View {
         task = Task {
             while !Task.isCancelled {
                 guard !Task.isCancelled else { break }
-                let elapsedSeconds = timerSession.elapsedTime
+                let remainingTime = timerSession.timeRemaining
                 let totalDuration = timerSession.duration
                 
                 // Check if completed
-                if elapsedSeconds >= totalDuration {
+                if remainingTime <= 0 {
                     await MainActor.run {
                         status = .isCompleted
                         onTimerCompletion?()
@@ -259,7 +263,7 @@ public struct CircularTimerButton: View {
                 }
                 
                 await MainActor.run {
-                    postProgressValue(elapsedSeconds, totalDuration)
+                    postProgressValue(remainingTime, totalDuration)
                 }
                 try? await Task.sleep(for: updateInterval)
             }
@@ -267,18 +271,18 @@ public struct CircularTimerButton: View {
     }
 
     private func postProgressValue(
-        _ elapsedSeconds: TimeInterval,
+        _ remainingSeconds: TimeInterval,
         _ totalDuration: Double
     ) {
         if totalDuration <= 0 {
             self.progressValue = 1.0
         } else {
             self.progressValue = min(
-                elapsedSeconds / totalDuration,
+                remainingSeconds / totalDuration,
                 1.0
             )
         }
-        self.onTimeLapse?(elapsedSeconds)
+        self.onTimeLapse?(remainingSeconds)
     }
     
     private func pauseTimer() {
@@ -286,22 +290,22 @@ public struct CircularTimerButton: View {
         task?.cancel()
         task = nil
         
-        let elapsedSeconds = timerSession.elapsedTime
+        let remainingSeconds = timerSession.timeRemaining
         let totalDuration = timerSession.duration
-        postProgressValue(elapsedSeconds, totalDuration)
+        postProgressValue(remainingSeconds, totalDuration)
     }
 
     private func resetTimer() {
         task?.cancel()
         task = nil
         withAnimation(.none) {
-            progressValue = 0
+            progressValue = 1
         }
     }
 
     private func completeTimer() {
         onCompletionState?()
-        progressValue = 1
+        progressValue = 0
         task?.cancel()
         task = nil
     }
@@ -340,7 +344,7 @@ public struct CircularTimerButton: View {
         )
         .accessibilityValue(
             progressValue >= 1 ? "Done" :
-                isRunning ? formatTime(timerSession.elapsedTime) : ""
+                isRunning ? formatTime(timerSession.timeRemaining) : ""
         )
         .accessibilityAddTraits(.isButton)
     }
