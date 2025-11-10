@@ -120,8 +120,8 @@ public struct CircularProgressButton<Content: View>: View {
                 )
                 .rotationEffect(.degrees(-90)) // Start from top
                 .frame(
-                    width: size - strokeWidth,
-                    height: size - strokeWidth,
+                    width: size - strokeWidth * 2,
+                    height: size - strokeWidth * 2,
                 )
                 .animation(.linear(duration: 0.16), value: progressValue)
                 .animation(.easeInOut(duration: 0.4), value: isCompleted)
