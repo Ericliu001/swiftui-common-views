@@ -118,14 +118,15 @@ public struct CircularProgressButton<Content: View>: View {
                         lineCap: .round
                     )
                 )
-                .rotationEffect(.degrees(-90)) // Start from top
                 .frame(
-                    width: size - strokeWidth * 2,
-                    height: size - strokeWidth * 2,
+                    width: size - strokeWidth,
+                    height: size - strokeWidth,
                 )
+                .rotationEffect(.degrees(-90)) // Start from top
                 .animation(.linear(duration: 0.16), value: progressValue)
                 .animation(.easeInOut(duration: 0.4), value: isCompleted)
         }
+        .frame(width: size, height: size)
         .contentShape(Circle()) // forward presses from the ring area
         .glassEffect(.regular.tint(isCompleted ? completeColor.opacity(0.2) : progressColor.opacity(0.2)).interactive())
     }
@@ -220,6 +221,7 @@ public struct CircularProgressButton<Content: View>: View {
             let size = min(geo.size.width, geo.size.height)
 
             buttonView(size: size)
+                .frame(width: .infinity, height: .infinity)
             .onChange(of: isCompleted) { _, newValue in
                 task?.cancel()
                 withAnimation {
