@@ -221,7 +221,6 @@ public struct CircularProgressButton<Content: View>: View {
             let size = min(geo.size.width, geo.size.height)
 
             buttonView(size: size)
-                .frame(width: .infinity, height: .infinity)
             .onChange(of: isCompleted) { _, newValue in
                 task?.cancel()
                 withAnimation {
