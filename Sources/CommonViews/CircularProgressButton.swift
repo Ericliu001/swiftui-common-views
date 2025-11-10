@@ -40,7 +40,6 @@ public struct CircularProgressButton<Content: View>: View {
     private let strokeWidth: CGFloat
     private let progressColor: Color
     private let completeColor: Color
-    private let backgroundColor: Color
     private let content: (_ isCompleted: Bool) -> Content
     private let enableHaptics: Bool
     private let updateInterval: Duration = .milliseconds(16) // ~60 FPS updates
@@ -53,7 +52,6 @@ public struct CircularProgressButton<Content: View>: View {
     ///   - strokeWidth: The width of the progress ring
     ///   - progressColor: The color of the progress ring while pressing
     ///   - completeColor: The color when the action is completed
-    ///   - backgroundColor: The background color of the button
     ///   - enableHaptics: Whether to enable haptic feedback (default: true)
     ///   - onCompletion: Callback triggered when long press completes
     ///   - onPressStart: Optional callback when press begins
@@ -65,7 +63,6 @@ public struct CircularProgressButton<Content: View>: View {
         strokeWidth: CGFloat = 4,
         progressColor: Color = .accentColor,
         completeColor: Color  = .green,
-        backgroundColor: Color = Color(uiColor: .systemBackground),
         enableHaptics: Bool = true,
         onCompletion: @escaping () -> Void,
         onPressStart: (() -> Void)? = nil,
@@ -79,7 +76,6 @@ public struct CircularProgressButton<Content: View>: View {
         self.strokeWidth = strokeWidth
         self.progressColor = progressColor
         self.completeColor = completeColor
-        self.backgroundColor = backgroundColor
         self.content = content
         self._isCompleted = isCompleted
         self.enableHaptics = enableHaptics
@@ -112,21 +108,6 @@ public struct CircularProgressButton<Content: View>: View {
 
     private func progressRing(size: CGFloat) -> some View {
         ZStack {
-            // Base circle
-            Circle()
-                .fill(isCompleted ? completeColor.opacity(0.2) : progressColor.opacity(0.2))
-                .background(.ultraThinMaterial, in: Circle())
-                .glassEffect()
-                .shadow(color: progressColor.opacity(0.15), radius: 2, x: 1, y: 2)
-
-            // Progress ring background
-//            Circle()
-//                .stroke(progressColor.opacity(0.2), lineWidth: strokeWidth)
-//                .frame(
-//                    width: size - strokeWidth,
-//                    height: size - strokeWidth
-//                )
-
             // Progress ring
             Circle()
                 .trim(from: 0, to: isCompleted ? 1 : progressValue)
@@ -145,6 +126,8 @@ public struct CircularProgressButton<Content: View>: View {
                 .animation(.linear(duration: 0.16), value: progressValue)
                 .animation(.easeInOut(duration: 0.4), value: isCompleted)
         }
+        .contentShape(Circle()) // forward presses from the ring area
+        .glassEffect(.regular.tint(isCompleted ? completeColor.opacity(0.2) : progressColor.opacity(0.2)).interactive())
     }
 
     private func buttonContent(size: CGFloat) -> some View {
@@ -159,7 +142,8 @@ public struct CircularProgressButton<Content: View>: View {
         .foregroundColor(
             isCompleted ? completeColor : progressColor
         )
-        .scaleEffect(isPressed ? 0.9 : 1.0)
+        .opacity(isPressed ? 0.6 : 1.0)
+        .scaleEffect(isPressed ? 1.1 : 1.0)
         .animation(.easeInOut(duration: 0.1), value: isPressed)
     }
 
@@ -168,11 +152,6 @@ public struct CircularProgressButton<Content: View>: View {
             progressRing(size: size)
             buttonContent(size: size)
         }
-        .scaleEffect(isPressed ? 0.95 : 1)
-        .animation(
-            .spring(response: 0.2, dampingFraction: 0.7),
-            value: isPressed
-        )
     }
 
     private func handleCompletion() {
