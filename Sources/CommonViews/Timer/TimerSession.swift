@@ -38,10 +38,16 @@ public class TimerSession {
         guard let startTime = startTime else {
             return 0
         }
+        
+        let referenceTime: ContinuousClock.Instant
+        if status == .isPaused, let pausedAt {
+            referenceTime = pausedAt
+        } else {
+            referenceTime = ContinuousClock.now
+        }
 
-        let dur: Duration = ContinuousClock.now - startTime - pausedDuration
-        // Convert Duration to seconds as Double
-        return dur.components.seconds.double + dur.components.attoseconds.double / 1e18
+        let dur = referenceTime - startTime - pausedDuration
+        return durationToTimeInterval(duration: dur)
     }
     
     public var timeRemaining: TimeInterval {
@@ -103,5 +109,11 @@ public class TimerSession {
         pausedAt = nil
         pausedDuration = .zero
         status = .isCompleted
+    }
+
+    private func durationToTimeInterval(
+        duration: Duration
+    ) -> TimeInterval {
+        return duration.components.seconds.double + duration.components.attoseconds.double / 1e18
     }
 }
