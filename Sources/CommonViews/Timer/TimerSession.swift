@@ -8,11 +8,26 @@
 import Foundation
 import SwiftUI
 
-private extension BinaryInteger {
-    var double: Double { Double(self) }
-}
-private extension BinaryFloatingPoint {
-    var double: Double { Double(self) }
+
+public extension Duration {
+    /// Converts this ``Duration`` instance into a ``TimeInterval`` (in seconds).
+    ///
+    /// A ``TimeInterval`` in Foundation represents a number of seconds as a `Double`,
+    /// while ``Duration`` stores time as integer seconds and attoseconds (1 attosecond = 1e−18 seconds).
+    ///
+    /// This method correctly converts both components into a precise `Double` value.
+    ///
+    /// Example:
+    /// ```swift
+    /// let d = Duration.seconds(2) + .attoseconds(500_000_000_000_000_000)
+    /// print(d.toTimeInterval()) // 2.5
+    /// ```
+    ///
+    /// - Returns: A `TimeInterval` representing the same span of time as this `Duration`.
+    func toTimeInterval() -> TimeInterval {
+        let (seconds, attoseconds) = self.components
+        return Double(seconds) + Double(attoseconds) / 1e18
+    }
 }
 
 public enum TimerStatus {
@@ -47,7 +62,7 @@ public class TimerSession {
         }
 
         let dur = referenceTime - startTime - pausedDuration
-        return durationToTimeInterval(duration: dur)
+        return dur.toTimeInterval()
     }
     
     public var timeRemaining: TimeInterval {
@@ -109,11 +124,5 @@ public class TimerSession {
         pausedAt = nil
         pausedDuration = .zero
         status = .isCompleted
-    }
-
-    private func durationToTimeInterval(
-        duration: Duration
-    ) -> TimeInterval {
-        return duration.components.seconds.double + duration.components.attoseconds.double / 1e18
     }
 }
