@@ -47,6 +47,7 @@ public class TimerSession {
     public var status: TimerStatus
     private var pausedAt: ContinuousClock.Instant?         // when it was paused
     private var pausedDuration: Duration = .zero
+    public var alarmId: UUID?
 
     // Calculated field: current time - startTime (frozen when paused)
     public var elapsedTime: TimeInterval {
