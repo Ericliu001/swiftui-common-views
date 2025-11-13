@@ -236,7 +236,7 @@ public struct CircularTimerButton: View {
     private func startTimer() {
         onStart?()
         guard timerSession.duration > 0 else {
-            status = .isCompleted
+            timerSession.complete()
             onTimerCompletion?()
             return
         }
@@ -257,8 +257,8 @@ public struct CircularTimerButton: View {
                 // Check if completed
                 if remainingTime <= 0 {
                     await MainActor.run {
-                        status = .isCompleted
                         onTimerCompletion?()
+                        timerSession.complete()
                     }
                     break
                 }
