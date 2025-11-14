@@ -27,7 +27,7 @@ import UIKit
 /// }
 /// .frame(width: 100, height: 100)
 /// ```
-public struct CircularProgressButton<Content: View>: View {
+public struct LongProgressButton<Content: View>: View {
     @State private var progressValue: Double = 0.0
     @State private var isPressed: Bool = false
     @State private var task: Task<Void, Never>?
@@ -122,6 +122,7 @@ public struct CircularProgressButton<Content: View>: View {
                     width: size - strokeWidth,
                     height: size - strokeWidth,
                 )
+                .glassEffect()
                 .rotationEffect(.degrees(-90)) // Start from top
                 .animation(.linear(duration: 0.16), value: progressValue)
                 .animation(.easeInOut(duration: 0.4), value: isCompleted)
@@ -139,7 +140,8 @@ public struct CircularProgressButton<Content: View>: View {
                 content(false)
             }
         }
-        .frame(width: size * 0.9, height: size * 0.9)
+        .contentShape(Circle())
+        .frame(width: size * 0.7, height: size * 0.75)
         .foregroundColor(
             isCompleted ? completeColor : progressColor
         )
@@ -283,7 +285,7 @@ struct CircularProgressButtonPreviewHost: View {
                 // Basic example
                 Text("Basic")
                     .font(.title2)
-                CircularProgressButton(
+                LongProgressButton(
                     isCompleted: $isCompletedBasic,
                     duration: .seconds(1.5),
                     onCompletion: {
@@ -308,7 +310,7 @@ struct CircularProgressButtonPreviewHost: View {
 
                 Text("Icons")
                     .font(.title3)
-                CircularProgressButton(
+                LongProgressButton(
                     isCompleted: $isCompletedIcons,
                     duration: .seconds(2),
                     strokeWidth: 12,
@@ -337,7 +339,7 @@ struct CircularProgressButtonPreviewHost: View {
                 // Custom styling
                 Text("Custom Style")
                     .font(.title3)
-                CircularProgressButton(
+                LongProgressButton(
                     isCompleted: $isCompletedCustomStyle,
                     duration: .seconds(1),
                     strokeWidth: 8,
