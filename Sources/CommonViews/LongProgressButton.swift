@@ -192,7 +192,7 @@ public struct LongProgressButton<Content: View>: View {
                     // Calculate progress directly from elapsed time (no accumulation errors)
                     let calculatedProgress = min(elapsedSeconds / totalDuration, 1.0)
 
-                    DispatchQueue.main.async {
+                    Task { @MainActor in
                         self.progressValue = calculatedProgress
                     }
 
