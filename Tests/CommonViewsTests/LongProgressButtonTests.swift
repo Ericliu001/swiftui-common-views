@@ -1,79 +1,78 @@
 //
-//  CircularProgressButtonTests.swift
+//  LongProgressButtonTests.swift
 //  CommonViews
 //
-//  Created by Claude Code on 10/25/25.
+//  Restored and renamed from CircularProgressButtonTests
 //
 
 import Testing
 import SwiftUI
 @testable import CommonViews
 
-@Suite("CircularProgressButton Tests")
+@Suite("LongProgressButton Tests")
 @MainActor
-struct CircularProgressButtonTests {
+struct LongProgressButtonTests {
 
     @Test("Initialization with default parameters")
     func testInitWithDefaults() {
-        let button = CircularProgressButton(
+        let button = LongProgressButton(
             onCompletion: {}
         ) { _ in
             Text("Test")
         }
-        #expect(button is CircularProgressButton<Text>)
+        #expect(button is LongProgressButton<Text>)
     }
 
     @Test("Initialization with custom duration")
     func testInitWithCustomDuration() {
-        let button = CircularProgressButton(
+        let button = LongProgressButton(
             duration: .seconds(5),
             onCompletion: {}
         ) { _ in
             Text("Test")
         }
-        #expect(button is CircularProgressButton<Text>)
+        #expect(button is LongProgressButton<Text>)
     }
 
     @Test("Initialization with custom stroke width")
     func testInitWithCustomStrokeWidth() {
-        let button = CircularProgressButton(
+        let button = LongProgressButton(
             strokeWidth: 8,
             onCompletion: {}
         ) { _ in
             Text("Test")
         }
-        #expect(button is CircularProgressButton<Text>)
+        #expect(button is LongProgressButton<Text>)
     }
 
     @Test("Initialization with custom colors")
     func testInitWithCustomColors() {
-        let button = CircularProgressButton(
+        let button = LongProgressButton(
             progressColor: .blue,
             completeColor: .green,
-            backgroundColor: .white,
             onCompletion: {}
         ) { _ in
             Text("Test")
         }
-        #expect(button is CircularProgressButton<Text>)
+        #expect(button is LongProgressButton<Text>)
     }
 
-    @Test("Initialization with reset toggle binding")
-    func testInitWithResetToggle() {
-        @State var resetToggle = false
+    @Test("Initialization with isCompleted binding")
+    func testInitWithBinding() {
+        @State var isCompleted = false
 
-        let button = CircularProgressButton(
-            resetToggle: $resetToggle,
+        let button = LongProgressButton(
+            isCompleted: $isCompleted,
             onCompletion: {}
         ) { _ in
             Text("Test")
         }
-        #expect(button is CircularProgressButton<Text>)
+        #expect(button is LongProgressButton<Text>)
     }
 
     @Test("View body is not empty")
     func testViewBodyNotEmpty() {
-        let button = CircularProgressButton(
+        let button = LongProgressButton(
             onCompletion: {}
         ) { _ in
             Text("Test")
@@ -83,25 +82,9 @@ struct CircularProgressButtonTests {
         #expect(mirror.children.count > 0)
     }
 
-    @Test("Completion callback is invoked", .timeLimit(.minutes(1)))
-    func testCompletionCallback() async throws {
-        let button = CircularProgressButton(
-            duration: .milliseconds(100),
-            onCompletion: {}
-        ) { _ in
-            Text("Test")
-        }
-
-        // Note: Full interaction testing would require ViewInspector or similar library
-        // This test verifies the button can be created with a completion handler
-        #expect(button is CircularProgressButton<Text>)
-        // In a real UI test environment, you would simulate the long press gesture
-        // and verify the completion callback is called
-    }
-
     @Test("Content builder with completed state")
     func testContentBuilderWithCompletedState() {
-        let button = CircularProgressButton(
+        let button = LongProgressButton(
             onCompletion: {}
         ) { isCompleted in
             if isCompleted {
@@ -117,34 +100,34 @@ struct CircularProgressButtonTests {
 
     @Test("Duration conversion to seconds")
     func testDurationAsSeconds() {
-        // Testing the private extension indirectly through initialization
-        let shortDuration = CircularProgressButton(
+        // Testing the initialization which uses duration
+        let shortDuration = LongProgressButton(
             duration: .seconds(1),
             onCompletion: {}
         ) { _ in Text("Short") }
 
-        let longDuration = CircularProgressButton(
+        let longDuration = LongProgressButton(
             duration: .seconds(10),
             onCompletion: {}
         ) { _ in Text("Long") }
 
-        #expect(shortDuration is CircularProgressButton<Text>)
-        #expect(longDuration is CircularProgressButton<Text>)
+        #expect(shortDuration is LongProgressButton<Text>)
+        #expect(longDuration is LongProgressButton<Text>)
     }
 
     @Test("Multiple button instances")
     func testMultipleInstances() {
-        let button1 = CircularProgressButton(
+        let button1 = LongProgressButton(
             progressColor: .red,
             onCompletion: {}
         ) { _ in Text("Button 1") }
 
-        let button2 = CircularProgressButton(
+        let button2 = LongProgressButton(
             progressColor: .blue,
             onCompletion: {}
         ) { _ in Text("Button 2") }
 
-        #expect(button1 is CircularProgressButton<Text>)
-        #expect(button2 is CircularProgressButton<Text>)
+        #expect(button1 is LongProgressButton<Text>)
+        #expect(button2 is LongProgressButton<Text>)
     }
 }

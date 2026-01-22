@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  TimerSession.swift
 //  Common
 //
 //  Created by Eric Liu on 11/1/25.
@@ -30,7 +30,7 @@ public extension Duration {
     }
 }
 
-public enum TimerStatus {
+public enum TimerStatus: String, Codable {
     case notStarted
     case inProgress
     case isPaused
@@ -38,15 +38,14 @@ public enum TimerStatus {
     case isCompleted
 }
 
-@Observable
-public class TimerSession {
+public struct TimerSession: Codable {
     public let id: UUID
     /// total duration in seconds (TimeInterval) - remains TimeInterval for compatibility
     public var duration: TimeInterval    // total seconds
-    public var startTime: ContinuousClock.Instant?         // when it started (nil if not started)
+    public var startTime: Date?         // when it started (nil if not started)
     public var status: TimerStatus
-    private var pausedAt: ContinuousClock.Instant?         // when it was paused
-    private var pausedDuration: Duration = .zero
+    private var pausedAt: Date?         // when it was paused
+    private var pausedDuration: TimeInterval = .zero
     public var alarmId: UUID?
 
     // Calculated field: current time - startTime (frozen when paused)
@@ -55,15 +54,15 @@ public class TimerSession {
             return 0
         }
         
-        let referenceTime: ContinuousClock.Instant
+        let referenceTime: Date
         if status == .isPaused, let pausedAt {
             referenceTime = pausedAt
         } else {
-            referenceTime = ContinuousClock.now
+            referenceTime = Date()
         }
 
-        let dur = referenceTime - startTime - pausedDuration
-        return dur.toTimeInterval()
+        let dur = referenceTime.timeIntervalSince(startTime) - pausedDuration
+        return dur
     }
     
     public var timeRemaining: TimeInterval {
@@ -73,7 +72,7 @@ public class TimerSession {
     public init(
         id: UUID = UUID(),
         duration: TimeInterval,
-        startTime: ContinuousClock.Instant? = nil,
+        startTime: Date? = nil,
         status: TimerStatus = .notStarted
     ) {
         self.id = id
@@ -85,34 +84,34 @@ public class TimerSession {
     // MARK: - Utility Functions
 
     /// Starts the timer from the beginning
-    public func start() {
-        startTime = ContinuousClock.now
+    public mutating func start() {
+        startTime = Date()
         status = .inProgress
     }
 
     /// Pauses the timer, preserving elapsed time
-    public func pause() {
+    public mutating func pause() {
         guard status == .inProgress || status == .isResumed else { return }
-        pausedAt = ContinuousClock.now
+        pausedAt = Date()
         status = .isPaused
     }
 
     /// Resumes the timer from where it was paused
-    public func resume() {
+    public mutating func resume() {
         status = .isResumed
         
         guard let pausedAt = pausedAt else { return }
         
 
         // Adjust startTime to account for the paused duration
-        let delta: Duration = ContinuousClock.now - pausedAt
+        let delta: TimeInterval = Date().timeIntervalSince(pausedAt)
         pausedDuration += delta
 
         self.pausedAt = nil
     }
 
     /// Resets the timer to its initial state
-    public func reset() {
+    public mutating func reset() {
         startTime = nil
         pausedAt = nil
         pausedDuration = .zero
@@ -120,7 +119,7 @@ public class TimerSession {
     }
 
     /// Completes the timer
-    public func complete() {
+    public mutating func complete() {
         startTime = nil
         pausedAt = nil
         pausedDuration = .zero
